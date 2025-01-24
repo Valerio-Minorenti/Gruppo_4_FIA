@@ -1,4 +1,5 @@
 COMMITMENT 1:
+
 Dopo una lettura del problema si conclude come il raggiungimento dell’obiettivo finale per classificare i tumori si divida in vari passi. Si è pensato, quindi, di svolgere il primo compito e di eseguire il Data Processing. Per motivi di comodità, si è pensato di voler convertire il file CSV fornito in un file XLSX. Quindi si è deciso di stilare una lista di punti:
 
 1)	 Convertire il file;
