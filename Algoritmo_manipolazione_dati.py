@@ -256,3 +256,59 @@ class Manipola_Dati:
         
         
         #####################
+        """
+#PASSO 0: l'utente deve avere due file tabulari e deve specificare i percorsi
+ ##Da qui si chiamano le funzione e l'utente deve scrivere
+if __name__ == "__main__":
+    # scrivere i percorsi qui, se il  file tabulare è diverso da csv,tsv o xlsx va aggiunto nella funzione salvafile!
+    input_path = input("Inserisci il percorso completo del file di input: ").strip()
+    output_path = input("Inserisci il percorso completo del file di output: ").strip()
+ 
+
+   #  sono salvati e vengono anche ridati
+    input_path, output_path = salva_percorso(input_path, output_path)
+
+    # Carica il file nel df
+    df = carica_file(input_path)
+
+   # PASSO 1: eliminare le colonne non utili ai fini del progetto
+   # l'utente deve scrivere i nomi delle colonne. vanno rispettati i caretteri e più colonne devono essere separate da virgole(scrivere nell'input?) 
+    colonne_input = input("Inserisci i nomi delle colonne da eliminare, separati da una virgola: ") 
+    colonne_da_eliminare = [col.strip() for col in colonne_input.split(",")] 
+    
+   #si usa la funzione per elimianre 
+    df = elimina_colonne(df, colonne_da_eliminare) 
+    
+   #PASSO 2: ordina la colonna ID
+    df = ordina_colonna(df, "Sample code number")
+
+    
+   # PASSO 3: eliminare le righe duplicate in base a una colonna scelta dall'utente
+    #colonna_scelta = input("Inserisci il nome della colonna su cui eliminare i duplicati e i valori nulli: ")
+    df = elimina_duplicati_su_colonna(df, "Sample code number")
+    ###################
+    # PASSO 3: eliminare le righe completamente duplicate
+   # df = df.drop_duplicates()  # Confronta tutte le colonne e rimuove i duplicati
+    #print("Righe duplicate eliminate considerando tutte le colonne.")
+    ##################
+    
+    # PASSO 4: convertire tutte le colonne in numeri interi
+    df = converti_a_numerico(df)  
+    
+    # PASSO 5: correggere i numeri errati
+    df = correggi_valori(df)
+    
+    # PASSO 6: correggere le colonne scelte dall'utente (1 diventa2)
+    #colonne_class_type = input("Inserisci i nomi delle colonne in cui convertire gli 1 in 2, separati da una virgola: ")
+    df = correggi_class_type(df, ["classtype_v1"])
+
+    
+ 
+  # PASSO 7: scambiare due colonne scelte dall'utente
+   # colonna1 = input("Inserisci il nome della prima colonna da scambiare: ").strip()
+    #colonna2 = input("Inserisci il nome della seconda colonna da scambiare: ").strip()
+    df = scambia_colonne(df)
+    
+   # df salvato
+    salva_file(df, output_path)
+    """
