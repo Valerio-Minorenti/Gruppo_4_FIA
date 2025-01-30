@@ -117,3 +117,187 @@ class Metrics:
         error_rate = float(np.mean(error_rate_scores))
 
         return error_rate, error_rate_scores
+    
+    def sensitivity(self, confusion_matrix=None, K=None):
+        """
+        Calcola la sensitivity (recall) K volte
+
+        Parameters
+        ----------
+        confusion_matrix : pd.DataFrame o list di pd.DataFrame, optional
+        La matrice di confusione o una lista di matrici di confusione. Se non specificato, si utilizzano i valori dell'istanza.
+
+         K : int, optional
+        Il numero di esperimenti. Se non specificato, viene calcolato automaticamente.
+
+         Returns
+        -------
+        sensitivity : float
+        La sensitivity media
+
+        sensitivity_scores : list
+        I valori della sensitivity per ogni esperimento
+        """
+        if confusion_matrix is None:
+            raise ValueError("La matrice di confusione deve essere fornita.")
+
+        sensitivity_scores = []
+
+        # Se la confusion matrix è una lista di DataFrame (per K esperimenti)
+        if isinstance(confusion_matrix, list) and isinstance(confusion_matrix[0], pd.DataFrame):
+            if K is None:
+                K = len(confusion_matrix)  # Calcola automaticamente il numero di esperimenti
+            for i in range(K):
+                tp = confusion_matrix[i].loc['Actual Positive', 'Predicted Positive']
+                fn = confusion_matrix[i].loc['Actual Positive', 'Predicted Negative']
+                sensitivity_scores.append(float(tp / (tp + fn)))
+        # Se la confusion matrix è un singolo DataFrame
+        elif isinstance(confusion_matrix, pd.DataFrame):
+            tp = confusion_matrix.loc['Actual Positive', 'Predicted Positive']
+            fn = confusion_matrix.loc['Actual Positive', 'Predicted Negative']
+            sensitivity_scores.append(float(tp / (tp + fn)))
+        else:
+            raise ValueError("La matrice di confusione deve essere un DataFrame o una lista di DataFrame.")
+
+        # Calcola la sensitivity media
+        sensitivity = float(np.mean(sensitivity_scores))
+        return sensitivity, sensitivity_scores
+    
+
+    def specificity(self, confusion_matrix=None, K=None):
+        """
+        Calcola la specificity K volte
+
+        Parameters
+        ----------
+        confusion_matrix : pd.DataFrame o list di pd.DataFrame, optional
+            La matrice di confusione o una lista di matrici di confusione. Se non specificato, si utilizzano i valori dell'istanza.
+
+        K : int, optional
+            Il numero di esperimenti. Se non specificato, viene calcolato automaticamente.
+
+        Returns
+        -------
+        specificity : float
+            La specificity media
+
+        specificity_scores : list
+            I valori della specificity per ogni esperimento
+        """
+        if confusion_matrix is None:
+            raise ValueError("La matrice di confusione deve essere fornita.")
+
+        specificity_scores = []
+
+        # Se la confusion matrix è una lista di DataFrame (per K esperimenti)
+        if isinstance(confusion_matrix, list) and isinstance(confusion_matrix[0], pd.DataFrame):
+            if K is None:
+                K = len(confusion_matrix)  # Calcola automaticamente il numero di esperimenti
+            for i in range(K):
+                tn = confusion_matrix[i].loc['Actual Negative', 'Predicted Negative']
+                fp = confusion_matrix[i].loc['Actual Negative', 'Predicted Positive']
+                specificity_scores.append(float(tn / (tn + fp)))
+        # Se la confusion matrix è un singolo DataFrame
+        elif isinstance(confusion_matrix, pd.DataFrame):
+            tn = confusion_matrix.loc['Actual Negative', 'Predicted Negative']
+            fp = confusion_matrix.loc['Actual Negative', 'Predicted Positive']
+            specificity_scores.append(float(tn / (tn + fp)))
+        else:
+            raise ValueError("La matrice di confusione deve essere un DataFrame o una lista di DataFrame.")
+
+        # Calcola la specificity media
+        specificity = float(np.mean(specificity_scores))
+        return specificity, specificity_scores
+    
+    def geometric_mean(self, sensitivity_scores=None, specificity_scores=None, K=None):
+        """ 
+        Calcola la media geometrica K volte utilizzando valori pre-calcolati di Sensitivity e Specificity.
+
+        Parameters
+        ----------
+        sensitivity_scores : list of float
+        Lista dei valori di sensitivity per ogni esperimento.
+
+        specificity_scores : list of float
+        Lista dei valori di specificity per ogni esperimento.
+
+        K : int, optional
+        Il numero di esperimenti. Se non specificato, viene calcolato automaticamente.
+
+        Returns
+        -------
+        gmean : float
+        La media geometrica media.
+
+        gmean_scores : list
+        Lista dei valori di media geometrica per ogni esperimento.
+        """
+        if sensitivity_scores is None or specificity_scores is None:
+            raise ValueError("Le liste di sensitivity e specificity devono essere fornite.")
+
+        if not isinstance(sensitivity_scores, list) or not isinstance(specificity_scores, list):
+            raise ValueError("Sensitivity e specificity devono essere liste di float.")
+
+        if K is None:
+            K = len(sensitivity_scores)
+
+        if len(sensitivity_scores) != len(specificity_scores):
+            raise ValueError("Le liste di sensitivity e specificity devono avere la stessa lunghezza.")
+
+        # Calcolo del G-Mean per ogni fold
+        gmean_scores = [float((sensitivity_scores[i] * specificity_scores[i])) for i in range(K)]
+
+        # Calcolo del G-Mean medio
+        average_gmean = float(np.mean(gmean_scores))
+        return average_gmean, gmean_scores
+
+
+    def AUC(self, sensitivity_list, specificity_list, K=None):
+        """
+        Calcola l'area sotto la curva ROC (AUC) K volte utilizzando Sensitivity e Specificity già calcolate.
+
+        Parameters
+        ----------
+        sensitivity_list : list of float
+        Lista contenente i valori di Sensitivity (TPR) per ogni esperimento.
+
+        specificity_list : list of float
+        Lista contenente i valori di Specificity per ogni esperimento.
+
+        K : int, optional
+        Il numero di esperimenti. Se non specificato, viene calcolato automaticamente.
+
+        Returns
+        -------
+        average_auc : float
+        L'area media sotto la curva ROC (AUC).
+
+        auc_scores : list
+        Lista dei valori di AUC per ogni esperimento.
+        """
+        if not sensitivity_list or not specificity_list:
+            raise ValueError("Le liste di Sensitivity e Specificity devono essere fornite.")
+
+        if K is None:
+            K = len(sensitivity_list)
+
+        if len(sensitivity_list) != len(specificity_list):
+            raise ValueError("Le liste di Sensitivity e Specificity devono avere la stessa lunghezza.")
+
+        # Convertiamo Specificity in FPR
+        fpr_list = [1 - spec for spec in specificity_list]
+
+        auc_scores = []
+
+        # Calcoliamo l'AUC per ogni esperimento
+        for i in range(K):
+            tpr = sensitivity_list[i]
+            fpr = fpr_list[i]
+
+            # Poiché abbiamo un solo punto (TPR, FPR), l'AUC sarà il valore assoluto della differenza tra TPR e FPR
+            auc = 0.5 * (1 + tpr - fpr)  # Approccio semplificato usando solo un punto ROC
+            auc_scores.append(auc)
+
+        # Calcola l'AUC media
+        average_auc = float(np.mean(auc_scores))
+        return average_auc, auc_scores
