@@ -167,13 +167,14 @@ class ManipolaDati:
         pd.DataFrame: Il df con i valori sostituii
     """
      
-     for col in df.columns[1:]:  # parte da  dopo la prima colonna
-        df[col] = df[col].apply(lambda x: (
+     for col in df.columns:
+        if col != "Sample code number" : # parte da  dopo la prima colonna
+         df[col] = df[col].apply(lambda x: (
             1 if pd.isna(x) or x == 0 else  # NaN o 0 = 1
             int(x // 10) if x > 10 and x % 10 == 0 else  # se >10 e %10=0 diventa il numero
             9 if x > 10 else  # se >10 e non 2, duventa 9
             int(x)  # altri casi son o tutti uguali
-        ))
+         ))
 
      return df
 
@@ -202,7 +203,7 @@ class ManipolaDati:
 
 #Passo 7
     @staticmethod
-    def scambia_colonne(df, colonna1="classtype_v1", colonna2="bareNucleix_wrong"):
+    def scambia_colonne(df, colonna1="classtype_v1", colonna2="bareNucleix_wrong",colonna3="Mitoses",colonna4="Sample code number"):
      """
     "Scambia" i valori e i nomi di due colonne.
 
@@ -214,16 +215,16 @@ class ManipolaDati:
     Returns:
         pd.DataFrame: Il df con le colonne scambiate.
     """
-     if colonna1 in df.columns and colonna2 in df.columns:
+     if colonna1 in df.columns and colonna2 in df.columns and colonna3 in df.columns and colonna4 in df.columns:
         # imverte i valori delle colonne
-        df[colonna1], df[colonna2] = df[colonna2], df[colonna1]
+        df[colonna1], df[colonna2], df[colonna3], df[colonna4] = df[colonna2], df[colonna1], df[colonna4], df[colonna3]
 
         # i nomi si scambiano
-        df = df.rename(columns={colonna1: colonna2, colonna2: colonna1})
+        df = df.rename(columns={colonna1: colonna2, colonna2: colonna1, colonna3: colonna4, colonna4: colonna3})
 
-        print(f"{colonna1} e {colonna2} sono state invertite.")
+        print(f"{colonna1} e {colonna2}, {colonna3} e {colonna4} sono state invertite.")
      else:
-        print(f"Attenzione! {colonna1} o {colonna2} non esistono.")
+        print(f"Attenzione! {colonna1} o {colonna2} o  {colonna3} o {colonna4}  non esistono.")
 
      return df
 
