@@ -35,7 +35,7 @@ Le metriche servono per valutare la performance del modello. Si dispone delle se
 - **Sensitivity**: La capacità del modello di identificare correttamente i positivi ( TP/ (TP + FN)).
 - **Specificity**: La capacità del modello di identificare correttamente i negativi (TN/ (TN + FP)).
 - **Geometric Mean**: La media geometrica di Sensitivity e Specificity, utile per valutare il bilanciamento tra le due metriche. (inoltre nella file `metrics.py` è stata calcolata la media geometrica senza effettuare la radice quadrata poichè va ad essere computazionalmente meno oneroso ed il significato rimane inalterato, poichè più è grande la media geometrica e migliore è il modello).
-- **Area Under Curve**: Una misura della capacità del modello di distinguere tra classi positive e negative.
+- **Area Under the Curve**: Una misura della capacità del modello di distinguere tra classi positive e negative.
 
 ### Personalizzazione per l'utente
 
