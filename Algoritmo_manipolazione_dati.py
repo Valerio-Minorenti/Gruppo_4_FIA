@@ -45,7 +45,7 @@ def carica_file(input_path):
         print("file caricato correttamente")
         return df
     except FileNotFoundError:
-        print(f"Errore! {input_file} non esiste o è errato il path")
+        print(f"Errore! {input_path} non esiste o è errato il path")
         return None
     except Exception as e:
         print(f"errore nel caricamento {e}")
@@ -172,7 +172,7 @@ def correggi_valori(df):
 #Passo 6
 def correggi_class_type(df, colonne_da_correggere):
     """
-    corregge tutti i valori 1 in 2, serve per la class type.
+    corregge tutti i valori 1 in 2, serve per la classtype_v1.
 
     Args:
         df (pd.DataFrame): Il df da correggere.
@@ -191,7 +191,7 @@ def correggi_class_type(df, colonne_da_correggere):
     return df
 
 #Passo 7
-def scambia_colonne(df, colonna1, colonna2):
+def scambia_colonne(df, colonna1="classtype_v1", colonna2="bareNucleix_wrong"):
     """
     "Scambia" i valori e i nomi di due colonne.
 
@@ -250,14 +250,15 @@ def salva_file(df, output_path):
  ##Da qui si chiamano le funzione e l'utente deve scrivere
 if __name__ == "__main__":
     # scrivere i percorsi qui, se il  file tabulare è diverso da csv,tsv o xlsx va aggiunto nella funzione salvafile!
-    input_file = "C:/Users/Standard/Desktop/version_1.csv"  
-    output_file = "C:/Users/Standard/Desktop/Dati_Progetto_Gruppo4.csv" 
+    input_path = input("Inserisci il percorso completo del file di input: ").strip()
+    output_path = input("Inserisci il percorso completo del file di output: ").strip()
+ 
 
    #  sono salvati e vengono anche ridati
-    input_file, output_file = salva_percorso(input_file, output_file)
+    input_path, output_path = salva_percorso(input_path, output_path)
 
     # Carica il file nel df
-    df = carica_file(input_file)
+    df = carica_file(input_path)
 
    # PASSO 1: eliminare le colonne non utili ai fini del progetto
    # l'utente deve scrivere i nomi delle colonne. vanno rispettati i caretteri e più colonne devono essere separate da virgole(scrivere nell'input?) 
@@ -268,12 +269,12 @@ if __name__ == "__main__":
     df = elimina_colonne(df, colonne_da_eliminare) 
     
    #PASSO 2: ordina la colonna ID
-    colonna_da_ordinare = input("Inserisci il nome della colonna da ordinare: ").strip()
-    df = ordina_colonna(df, colonna_da_ordinare)
+    df = ordina_colonna(df, "Sample code number")
+
     
    # PASSO 3: eliminare le righe duplicate in base a una colonna scelta dall'utente
-    colonna_scelta = input("Inserisci il nome della colonna su cui eliminare i duplicati e i valori nulli: ")
-    df = elimina_duplicati_su_colonna(df, colonna_scelta)
+    #colonna_scelta = input("Inserisci il nome della colonna su cui eliminare i duplicati e i valori nulli: ")
+    df = elimina_duplicati_su_colonna(df, "Sample code number")
     ###################
     # PASSO 3: eliminare le righe completamente duplicate
    # df = df.drop_duplicates()  # Confronta tutte le colonne e rimuove i duplicati
@@ -287,14 +288,15 @@ if __name__ == "__main__":
     df = correggi_valori(df)
     
     # PASSO 6: correggere le colonne scelte dall'utente (1 diventa2)
-    colonne_class_type = input("Inserisci i nomi delle colonne in cui convertire gli 1 in 2, separati da una virgola: ")
-    colonne_da_correggere = [col.strip() for col in colonne_class_type.split(",")]
+    #colonne_class_type = input("Inserisci i nomi delle colonne in cui convertire gli 1 in 2, separati da una virgola: ")
+    df = correggi_class_type(df, ["classtype_v1"])
+
     
-    df = correggi_class_type(df, colonne_da_correggere)
+ 
   # PASSO 7: scambiare due colonne scelte dall'utente
-    colonna1 = input("Inserisci il nome della prima colonna da scambiare: ").strip()
-    colonna2 = input("Inserisci il nome della seconda colonna da scambiare: ").strip()
-    df = scambia_colonne(df, colonna1, colonna2)
+   # colonna1 = input("Inserisci il nome della prima colonna da scambiare: ").strip()
+    #colonna2 = input("Inserisci il nome della seconda colonna da scambiare: ").strip()
+    df = scambia_colonne(df)
     
    # df salvato
-    salva_file(df, output_file)
+    salva_file(df, output_path)
