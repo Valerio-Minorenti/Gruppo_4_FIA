@@ -3,7 +3,7 @@ import numpy as np
 
 class Metrics:
     """
-    Modella le metriche di validazione del modello
+    Modella le metriche di validazione del modello.
     """
     def __init__(self, true_positive=None, true_negative=None, false_positive=None, false_negative=None, filename=None):
         self.true_positive = true_positive
@@ -34,7 +34,7 @@ class Metrics:
     
     def accuracy(self, confusion_matrix=None, K=None):
         """
-        Calcola l'accuratezza
+        Calcola l'accuratezza.
 
         Parameters
         ----------
@@ -47,10 +47,10 @@ class Metrics:
         Returns
         -------
         accuracy : float
-            L'accuratezza media
+            L'accuratezza media.
 
         accuracy_scores : list
-            I valori di accuratezza per ogni esperimento
+            I valori di accuratezza per ogni esperimento.
         """
         if confusion_matrix is None:
             raise ValueError("La matrice di confusione deve essere fornita.")
@@ -75,3 +75,45 @@ class Metrics:
         accuracy = float(np.mean(accuracy_scores))
         return accuracy, accuracy_scores
     
+    def error_rate(self, confusion_matrix=None, K=None):
+        """
+        Calcola l'error rate.
+
+        Parameters
+        ----------
+        confusion_matrix : list o pd.DataFrame
+            La matrice di confusione o una lista di matrici di confusione.
+
+        K : int, optional
+            Il numero di esperimenti. Se non specificato, viene calcolato automaticamente come la lunghezza della lista di matrici di confusione.
+
+        Returns
+        -------
+        error_rate : float
+            Il tasso di errore medio.
+
+        error_rate_scores : list
+            I valori del tasso di errore per ogni esperimento.
+        """
+        error_rate_scores = []
+
+        # Se la confusion matrix è una lista di DataFrame (per K esperimenti)
+        if isinstance(confusion_matrix, list) and all(isinstance(cm, pd.DataFrame) for cm in confusion_matrix):
+            if K is None:
+                K = len(confusion_matrix)
+            for i in range(K):
+                cm = confusion_matrix[i]
+                total = cm.values.sum()
+                error_rate_scores.append(1 - np.diag(cm).sum() / total)
+
+        # Se la confusion matrix è un singolo DataFrame
+        elif isinstance(confusion_matrix, pd.DataFrame):
+            total = confusion_matrix.values.sum()
+            error_rate_scores.append(1 - np.diag(confusion_matrix).sum() / total)
+        else:
+            raise ValueError("La matrice di confusione deve essere un DataFrame o una lista di DataFrame.")
+
+        # Calcola l'error rate medio
+        error_rate = float(np.mean(error_rate_scores))
+
+        return error_rate, error_rate_scores
