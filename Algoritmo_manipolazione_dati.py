@@ -1,7 +1,7 @@
 import pandas as pd # type: ignore
 import os
 
-class Manipola_Dati:
+class ManipolaDati:
 #PASSO 0
     def __init__(self, input_path: str, output_path: str):
         """
@@ -23,7 +23,7 @@ class Manipola_Dati:
 
 
 #Passo 0.5
-    def carica_file(self):
+    def carica_file(self,input_path):
      """
      il file tabulare lo si carica come df
 
@@ -166,7 +166,8 @@ class Manipola_Dati:
     Returns:
         pd.DataFrame: Il df con i valori sostituii
     """
-     for col in df.columns[1:]:  # parte da  dopo la prima colonna 
+     
+     for col in df.columns[1:]:  # parte da  dopo la prima colonna
         df[col] = df[col].apply(lambda x: (
             1 if pd.isna(x) or x == 0 else  # NaN o 0 = 1
             int(x // 10) if x > 10 and x % 10 == 0 else  # se >10 e %10=0 diventa il numero
@@ -227,7 +228,7 @@ class Manipola_Dati:
      return df
 
 #PAsso ultimo
-    def salva_file(self, df):
+    def salva_file(self, df, output_path):
      """
     salva il df nel formato tabulare desiderato (supportato)
 
