@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from kNN_classifier import KNN  # Assicurati che la classe KNN sia definita correttamente
+from kNN_classifier import KNN
 
 class StratifiedCrossValidation:
     """
