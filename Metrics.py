@@ -1,28 +1,43 @@
 import pandas as pd
 import numpy as np
+from typing import List, Tuple, Dict
 
-class Metrics:
+class MetricsCalculator:
     """
     Modella le metriche di validazione del modello.
     """
-    def __init__(self, true_positive=None, true_negative=None, false_positive=None, false_negative=None, filename=None):
+
+    def __init__(self, true_positive=None, true_negative=None, false_positive=None, false_negative=None):
         self.true_positive = true_positive
         self.true_negative = true_negative
         self.false_positive = false_positive
         self.false_negative = false_negative
-        self.filename = filename
-        
-    def confusion_matrix(self):
+
+    @staticmethod
+    def confu(y_test: np.ndarray, predictions: np.ndarray) -> Tuple[int, int, int, int]:
+        """
+        Calcola i valori della matrice di confusione generica.
+        Determina la classe positiva e negativa dai dati stessi.
+        """
+        unique_classes = np.unique(y_test)
+        if len(unique_classes) != 2:
+            raise ValueError("Il calcolo della matrice di confusione richiede due classi distinte.")
+
+        # Assegna automaticamente la classe positiva come quella più alta
+        positive_class = max(unique_classes)
+        negative_class = min(unique_classes)
+
+        # Calcola i valori della matrice di confusione
+        tp = np.sum((y_test == positive_class) & (predictions == positive_class))
+        tn = np.sum((y_test == negative_class) & (predictions == negative_class))
+        fp = np.sum((y_test == negative_class) & (predictions == positive_class))
+        fn = np.sum((y_test == positive_class) & (predictions == negative_class))
+
+        return tp, tn, fp, fn
+
+    def confusion_matrix(self) -> pd.DataFrame:
         """
         Restituisce la matrice di confusione come DataFrame.
-
-        La matrice di confusione è una rappresentazione delle prestazioni del modello di classificazione.
-        Contiene i conteggi dei veri negativi, falsi positivi, falsi negativi e veri positivi.
-
-        Returns
-        -------
-        pd.DataFrame
-            Un DataFrame contenente i valori della matrice di confusione.
         """
         if None in [self.true_negative, self.false_positive, self.false_negative, self.true_positive]:
             raise ValueError("Tutti i valori della matrice di confusione devono essere forniti.")
@@ -31,273 +46,88 @@ class Metrics:
             'Predicted Negative': [self.true_negative, self.false_negative],
             'Predicted Positive': [self.false_positive, self.true_positive]
         }, index=['Actual Negative', 'Actual Positive'])
-    
-    def accuracy(self, confusion_matrix=None, K=None):
-        """
-        Calcola l'accuratezza.
 
+    def calculate_metrics(self, confusion_matrix: pd.DataFrame) -> Dict[str, float]:
+        """
+        Calcola tutte le metriche da una matrice di confusione.
+        
         Parameters
         ----------
-        confusion_matrix : pd.DataFrame o list di pd.DataFrame, optional
-            La matrice di confusione o una lista di matrici di confusione. Se non specificato, si utilizzano i valori dell'istanza.
-
-        K : int, optional
-            Il numero di esperimenti. Se non specificato, viene calcolato automaticamente.
+        confusion_matrix : pd.DataFrame
+            La matrice di confusione.
 
         Returns
         -------
-        accuracy : float
-            L'accuratezza media.
-
-        accuracy_scores : list
-            I valori di accuratezza per ogni esperimento.
+        Dict[str, float]
+            Dizionario contenente tutte le metriche calcolate.
         """
-        if confusion_matrix is None:
-            raise ValueError("La matrice di confusione deve essere fornita.")
+        tp = confusion_matrix.loc['Actual Positive', 'Predicted Positive']
+        tn = confusion_matrix.loc['Actual Negative', 'Predicted Negative']
+        fp = confusion_matrix.loc['Actual Negative', 'Predicted Positive']
+        fn = confusion_matrix.loc['Actual Positive', 'Predicted Negative']
 
-        accuracy_scores = []
+        metrics = {
+            "Accuracy Rate": self._accuracy_rate(tp, tn, fp, fn),
+            "Error Rate": self._error_rate(tp, tn, fp, fn),
+            "Sensitivity": self._sensitivity(tp, fn),
+            "Specificity": self._specificity(tn, fp),
+            "Geometric Mean": self._geometric_mean(tp, tn, fp, fn),
+            "Area Under Curve": self._area_under_curve(tp, tn, fp, fn)
+        }
+        return metrics
 
-        # Se la confusion matrix è una lista di DataFrame (per K esperimenti)
-        if isinstance(confusion_matrix, list) and isinstance(confusion_matrix[0], pd.DataFrame):
-            if K is None:
-                K = len(confusion_matrix)  # Calcola automaticamente il numero di esperimenti
-            for i in range(K):
-                # Calcolo dell'accuratezza
-                accuracy_scores.append(float(np.diag(confusion_matrix[i]).sum() / confusion_matrix[i].values.sum()))
-        # Se la confusion matrix è un singolo DataFrame
-        elif isinstance(confusion_matrix, pd.DataFrame):
-            # Calcolo dell'accuratezza
-            accuracy_scores.append(float(np.diag(confusion_matrix).sum() / confusion_matrix.values.sum()))
-        else:
-            raise ValueError("La matrice di confusione deve essere un DataFrame o una lista di DataFrame.")
+    def _accuracy_rate(self, tp: int, tn: int, fp: int, fn: int) -> float:
+        """
+        Calcola l'accuracy rate.
+        """
+        total = tp + tn + fp + fn
+        return float((tp + tn) / total) if total > 0 else 0.0
 
-        # Calcola l'accuratezza media
-        accuracy = float(np.mean(accuracy_scores))
-        return accuracy, accuracy_scores
-    
-    def error_rate(self, confusion_matrix=None, K=None):
+    def _error_rate(self, tp: int, tn: int, fp: int, fn: int) -> float:
         """
         Calcola l'error rate.
-
-        Parameters
-        ----------
-        confusion_matrix : list o pd.DataFrame
-            La matrice di confusione o una lista di matrici di confusione.
-
-        K : int, optional
-            Il numero di esperimenti. Se non specificato, viene calcolato automaticamente come la lunghezza della lista di matrici di confusione.
-
-        Returns
-        -------
-        error_rate : float
-            Il tasso di errore medio.
-
-        error_rate_scores : list
-            I valori del tasso di errore per ogni esperimento.
         """
-        error_rate_scores = []
+        total = tp + tn + fp + fn
+        return float((fp + fn) / total) if total > 0 else 0.0
 
-        # Se la confusion matrix è una lista di DataFrame (per K esperimenti)
-        if isinstance(confusion_matrix, list) and all(isinstance(cm, pd.DataFrame) for cm in confusion_matrix):
-            if K is None:
-                K = len(confusion_matrix)
-            for i in range(K):
-                cm = confusion_matrix[i]
-                total = cm.values.sum()
-                error_rate_scores.append(1 - np.diag(cm).sum() / total)
-
-        # Se la confusion matrix è un singolo DataFrame
-        elif isinstance(confusion_matrix, pd.DataFrame):
-            total = confusion_matrix.values.sum()
-            error_rate_scores.append(1 - np.diag(confusion_matrix).sum() / total)
-        else:
-            raise ValueError("La matrice di confusione deve essere un DataFrame o una lista di DataFrame.")
-
-        # Calcola l'error rate medio
-        error_rate = float(np.mean(error_rate_scores))
-
-        return error_rate, error_rate_scores
-    
-    def sensitivity(self, confusion_matrix=None, K=None):
+    def _sensitivity(self, tp: int, fn: int) -> float:
         """
-        Calcola la sensitivity (recall) K volte
-
-        Parameters
-        ----------
-        confusion_matrix : pd.DataFrame o list di pd.DataFrame, optional
-        La matrice di confusione o una lista di matrici di confusione. Se non specificato, si utilizzano i valori dell'istanza.
-
-         K : int, optional
-        Il numero di esperimenti. Se non specificato, viene calcolato automaticamente.
-
-         Returns
-        -------
-        sensitivity : float
-        La sensitivity media
-
-        sensitivity_scores : list
-        I valori della sensitivity per ogni esperimento
+        Calcola la sensitivity (recall).
         """
-        if confusion_matrix is None:
-            raise ValueError("La matrice di confusione deve essere fornita.")
+        actual_positive = tp + fn
+        return float(tp / actual_positive) if actual_positive > 0 else 0.0
 
-        sensitivity_scores = []
-
-        # Se la confusion matrix è una lista di DataFrame (per K esperimenti)
-        if isinstance(confusion_matrix, list) and isinstance(confusion_matrix[0], pd.DataFrame):
-            if K is None:
-                K = len(confusion_matrix)  # Calcola automaticamente il numero di esperimenti
-            for i in range(K):
-                tp = confusion_matrix[i].loc['Actual Positive', 'Predicted Positive']
-                fn = confusion_matrix[i].loc['Actual Positive', 'Predicted Negative']
-                sensitivity_scores.append(float(tp / (tp + fn)))
-        # Se la confusion matrix è un singolo DataFrame
-        elif isinstance(confusion_matrix, pd.DataFrame):
-            tp = confusion_matrix.loc['Actual Positive', 'Predicted Positive']
-            fn = confusion_matrix.loc['Actual Positive', 'Predicted Negative']
-            sensitivity_scores.append(float(tp / (tp + fn)))
-        else:
-            raise ValueError("La matrice di confusione deve essere un DataFrame o una lista di DataFrame.")
-
-        # Calcola la sensitivity media
-        sensitivity = float(np.mean(sensitivity_scores))
-        return sensitivity, sensitivity_scores
-    
-
-    def specificity(self, confusion_matrix=None, K=None):
+    def _specificity(self, tn: int, fp: int) -> float:
         """
-        Calcola la specificity K volte
-
-        Parameters
-        ----------
-        confusion_matrix : pd.DataFrame o list di pd.DataFrame, optional
-            La matrice di confusione o una lista di matrici di confusione. Se non specificato, si utilizzano i valori dell'istanza.
-
-        K : int, optional
-            Il numero di esperimenti. Se non specificato, viene calcolato automaticamente.
-
-        Returns
-        -------
-        specificity : float
-            La specificity media
-
-        specificity_scores : list
-            I valori della specificity per ogni esperimento
+        Calcola la specificity (true negative rate).
         """
-        if confusion_matrix is None:
-            raise ValueError("La matrice di confusione deve essere fornita.")
+        actual_negative = tn + fp
+        return float(tn / actual_negative) if actual_negative > 0 else 0.0
 
-        specificity_scores = []
-
-        # Se la confusion matrix è una lista di DataFrame (per K esperimenti)
-        if isinstance(confusion_matrix, list) and isinstance(confusion_matrix[0], pd.DataFrame):
-            if K is None:
-                K = len(confusion_matrix)  # Calcola automaticamente il numero di esperimenti
-            for i in range(K):
-                tn = confusion_matrix[i].loc['Actual Negative', 'Predicted Negative']
-                fp = confusion_matrix[i].loc['Actual Negative', 'Predicted Positive']
-                specificity_scores.append(float(tn / (tn + fp)))
-        # Se la confusion matrix è un singolo DataFrame
-        elif isinstance(confusion_matrix, pd.DataFrame):
-            tn = confusion_matrix.loc['Actual Negative', 'Predicted Negative']
-            fp = confusion_matrix.loc['Actual Negative', 'Predicted Positive']
-            specificity_scores.append(float(tn / (tn + fp)))
-        else:
-            raise ValueError("La matrice di confusione deve essere un DataFrame o una lista di DataFrame.")
-
-        # Calcola la specificity media
-        specificity = float(np.mean(specificity_scores))
-        return specificity, specificity_scores
-    
-    def geometric_mean(self, sensitivity_scores=None, specificity_scores=None, K=None):
-        """ 
-        Calcola la media geometrica K volte utilizzando valori pre-calcolati di Sensitivity e Specificity.
-
-        Parameters
-        ----------
-        sensitivity_scores : list of float
-        Lista dei valori di sensitivity per ogni esperimento.
-
-        specificity_scores : list of float
-        Lista dei valori di specificity per ogni esperimento.
-
-        K : int, optional
-        Il numero di esperimenti. Se non specificato, viene calcolato automaticamente.
-
-        Returns
-        -------
-        gmean : float
-        La media geometrica media.
-
-        gmean_scores : list
-        Lista dei valori di media geometrica per ogni esperimento.
+    def _geometric_mean(self, tp: int, tn: int, fp: int, fn: int) -> float:
         """
-        if sensitivity_scores is None or specificity_scores is None:
-            raise ValueError("Le liste di sensitivity e specificity devono essere fornite.")
-
-        if not isinstance(sensitivity_scores, list) or not isinstance(specificity_scores, list):
-            raise ValueError("Sensitivity e specificity devono essere liste di float.")
-
-        if K is None:
-            K = len(sensitivity_scores)
-
-        if len(sensitivity_scores) != len(specificity_scores):
-            raise ValueError("Le liste di sensitivity e specificity devono avere la stessa lunghezza.")
-
-        # Calcolo del G-Mean per ogni fold
-        gmean_scores = [float((sensitivity_scores[i] * specificity_scores[i])) for i in range(K)]
-
-        # Calcolo del G-Mean medio
-        average_gmean = float(np.mean(gmean_scores))
-        return average_gmean, gmean_scores
-
-
-    def AUC(self, sensitivity_list, specificity_list, K=None):
+        Calcola la Geometric Mean (G-Mean).
         """
-        Calcola l'area sotto la curva ROC (AUC) K volte utilizzando Sensitivity e Specificity già calcolate.
+        sensitivity = self._sensitivity(tp, fn)
+        specificity = self._specificity(tn, fp)
+        return float(np.sqrt(sensitivity * specificity))
 
-        Parameters
-        ----------
-        sensitivity_list : list of float
-        Lista contenente i valori di Sensitivity (TPR) per ogni esperimento.
-
-        specificity_list : list of float
-        Lista contenente i valori di Specificity per ogni esperimento.
-
-        K : int, optional
-        Il numero di esperimenti. Se non specificato, viene calcolato automaticamente.
-
-        Returns
-        -------
-        average_auc : float
-        L'area media sotto la curva ROC (AUC).
-
-        auc_scores : list
-        Lista dei valori di AUC per ogni esperimento.
+    def _area_under_curve(self, tp: int, tn: int, fp: int, fn: int) -> float:
         """
-        if not sensitivity_list or not specificity_list:
-            raise ValueError("Le liste di Sensitivity e Specificity devono essere fornite.")
+        Calcola l'Area Under the Curve (AUC).
+        """
+        sensitivity = self._sensitivity(tp, fn)
+        specificity = self._specificity(tn, fp)
+        return float((sensitivity + specificity) / 2)
 
-        if K is None:
-            K = len(sensitivity_list)
 
-        if len(sensitivity_list) != len(specificity_list):
-            raise ValueError("Le liste di Sensitivity e Specificity devono avere la stessa lunghezza.")
-
-        # Convertiamo Specificity in FPR
-        fpr_list = [1 - spec for spec in specificity_list]
-
-        auc_scores = []
-
-        # Calcoliamo l'AUC per ogni esperimento
-        for i in range(K):
-            tpr = sensitivity_list[i]
-            fpr = fpr_list[i]
-
-            # Poiché abbiamo un solo punto (TPR, FPR), l'AUC sarà il valore assoluto della differenza tra TPR e FPR
-            auc = 0.5 * (1 + tpr - fpr)  # Approccio semplificato usando solo un punto ROC
-            auc_scores.append(auc)
-
-        # Calcola l'AUC media
-        average_auc = float(np.mean(auc_scores))
-        return average_auc, auc_scores
+# Esempio di utilizzo
+if __name__ == "__main__":
+    y_test = np.array([4, 2, 4, 2])
+    predictions = np.array([4, 2, 4, 4])
+    tp, tn, fp, fn = MetricsCalculator.confu(y_test, predictions)
+    metrics_calc = MetricsCalculator(true_positive=tp, true_negative=tn, false_positive=fp, false_negative=fn)
+    cm = metrics_calc.confusion_matrix()
+    print("Confusion Matrix:\n", cm)
+    metrics = metrics_calc.calculate_metrics(cm)
+    print("Metrics:\n", metrics)

@@ -49,7 +49,7 @@ class Scalingdf:
         df_scalato = df.copy()
 
         # si prendono tutte le colonne tramnne sample id number
-        colonne_da_scalare = [col for col in df.columns if col != "Sample id number"]
+        colonne_da_scalare = [col for col in df.columns if col != "Sample id number" or col != "classtype_v1"]
 
         # formula per normalizzare le colonne
         for col in colonne_da_scalare:
