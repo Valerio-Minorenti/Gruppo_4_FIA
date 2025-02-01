@@ -7,12 +7,18 @@ class StratifiedCrossValidation:
     Classe per eseguire stratified cross-validation.
     """
 
-    def __init__(self, K):
+    def __init__(self, K, df, class_column, k_neighbors):
         """
         Costruttore della classe StratifiedCrossValidation.
         :param K: Numero di fold per la cross-validation.
+        :param df: DataFrame contenente i dati.
+        :param class_column: Nome della colonna che contiene le etichette di classe.
+        :param k_neighbors: Numero di vicini da considerare per il classificatore KNN.
         """
         self.K = K  # Numero di fold
+        self.df = pd.DataFrame(df)
+        self.class_column = class_column
+        self.k_neighbors = k_neighbors
 
     def split(self, df, class_column):
         """
@@ -49,63 +55,25 @@ class StratifiedCrossValidation:
 
         return folds
     
-    def run_experiments(self, df, class_column, k_neighbors):
+    def run_experiments(self):
         """
         Esegue la stratified cross-validation per un numero specificato di esperimenti e calcola le accuratezze.
-
-        :param df: DataFrame contenente i dati.
-        :param class_column: Nome della colonna che contiene le etichette di classe.
-        :param k_neighbors: Numero di vicini da considerare per il classificatore KNN.
         :return: Lista delle accuratezze per ciascun esperimento.
         """
         accuracies = []  # Inizializza una lista vuota per memorizzare le accuratezze di ciascun esperimento
-        folds = self.split(df, class_column)  # Divide il DataFrame in set di training e test
+        folds = self.split(self.df, self.class_column)  # Divide il DataFrame in set di training e test
         for train_set, test_set in folds:
-            X_train = train_set.drop(columns=class_column).values
-            y_train = train_set[class_column].values
-            X_test = test_set.drop(columns=class_column).values
-            y_test = test_set[class_column].values
+            X_train = train_set.drop(columns=self.class_column).values
+            y_train = train_set[self.class_column].values
+            X_test = test_set.drop(columns=self.class_column).values
+            y_test = test_set[self.class_column].values
 
-            classifier = KNN(k=k_neighbors)  # Crea un'istanza del classificatore KNN con il numero di vicini specificato
+            classifier = KNN(k=self.k_neighbors)  # Crea un'istanza del classificatore KNN con il numero di vicini specificato
             classifier.fit(X_train, y_train)  # Addestra il classificatore sui dati di addestramento
             predictions = classifier.predict(X_test)  # Predice le etichette per i dati di test
-            accuracy = np.mean(predictions == y_test)  # Calcola l'accuratezza delle predizioni
-            accuracies.append(float(accuracy))  # Aggiunge l'accuratezza alla lista, convertendola in float per evitare np.float64
+            # Stampa dei risultati per ogni fold
+            print("Stratified Cross Validation eseguito con successo.")
+            print(f"Numero di campioni nel test set: {len(y_test)}")
+            print(f"Esempio di etichette reali: {y_test[:10]}")
+            print(f"Esempio di etichette predette: {[float(pred) for pred in predictions[:10]]}")
 
-        return accuracies  # Restituisce la lista delle accuratezze
-
-if __name__ == '__main__':
-    # Creazione di un DataFrame di esempio
-    data = {
-        'feature1': [1, 2, 3, 4, 5, 6, 7, 8, 8],
-        'feature2': [0.5, 4.3, 3.3, 4.0, 2.5, 5.7, 5.3, 7.4, 8.1],
-        'Class': [2, 4, 4, 4, 2, 2, 4, 4, 4]
-    }
-    df_example = pd.DataFrame(data)
-    print("DataFrame di esempio:")
-    print(df_example)
-
-    # Chiediamo all'utente di specificare il numero di fold e il numero di vicini
-    K = int(input("\nInserisci il numero di fold K (ad esempio, 3): "))
-    k_neighbors = 3;#int(input("Inserisci il numero di vicini (k) per KNN: "))
-
-    # Istanziazione della classe StratifiedCrossValidation
-    splitter = StratifiedCrossValidation(K=K)
-
-    # Eseguiamo lo split stratificato
-    folds = splitter.split(df_example, class_column="Class")
-
-    # Stampa dei risultati
-    for fold_index, (train_set, test_set) in enumerate(folds):
-        print(f"\nFold {fold_index + 1}:")
-        print("Train set:")
-        print(train_set)
-        print("\nTest set:")
-        print(test_set)
-
-    # Eseguiamo gli esperimenti stratificati
-    accuracies = splitter.run_experiments(df_example, class_column="Class", k_neighbors=k_neighbors)
-
-    # Stampa dei risultati degli esperimenti
-    for experiment_index, accuracy in enumerate(accuracies):
-        print(f"Esperimento {experiment_index + 1} - Accuratezza: {accuracy:.2f}")
