@@ -52,6 +52,7 @@ class StratifiedCrossValidation:
             classifier = KNN(k=self.k_neighbors)
             classifier.fit(X_train, y_train)
             predictions = classifier.predict(X_test)
+            predictions = [int(pred) for pred in predictions]
 
             results.append((y_test, predictions))
 
