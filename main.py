@@ -6,7 +6,7 @@ from Holdout import Holdouts
 from Random_Subsampling import RandomSubsampling
 from Stratified_Cross_Validation import StratifiedCrossValidation
 from Scaling_dati import Scalingdf, GestisciScaling
-from METRICHE import MetricsCalculator
+from Metrics import MetricsCalculator
 
 
 def main():

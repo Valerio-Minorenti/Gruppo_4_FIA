@@ -47,33 +47,41 @@ class MetricsCalculator:
             'Predicted Positive': [self.false_positive, self.true_positive]
         }, index=['Actual Negative', 'Actual Positive'])
 
-    def calculate_metrics(self, confusion_matrix: pd.DataFrame) -> Dict[str, float]:
+    def calculate_metrics(self, confusion_matrix: pd.DataFrame, metrics_to_calculate: List[str]) -> Dict[str, float]:
         """
-        Calcola tutte le metriche da una matrice di confusione.
+        Calcola le metriche specificate da una matrice di confusione.
         
         Parameters
         ----------
         confusion_matrix : pd.DataFrame
             La matrice di confusione.
+        metrics_to_calculate : List[str]
+            Lista delle metriche da calcolare.
 
         Returns
         -------
         Dict[str, float]
-            Dizionario contenente tutte le metriche calcolate.
+            Dizionario contenente le metriche calcolate.
         """
         tp = confusion_matrix.loc['Actual Positive', 'Predicted Positive']
         tn = confusion_matrix.loc['Actual Negative', 'Predicted Negative']
         fp = confusion_matrix.loc['Actual Negative', 'Predicted Positive']
         fn = confusion_matrix.loc['Actual Positive', 'Predicted Negative']
 
-        metrics = {
-            "Accuracy Rate": self._accuracy_rate(tp, tn, fp, fn),
-            "Error Rate": self._error_rate(tp, tn, fp, fn),
-            "Sensitivity": self._sensitivity(tp, fn),
-            "Specificity": self._specificity(tn, fp),
-            "Geometric Mean": self._geometric_mean(tp, tn, fp, fn),
-            "Area Under Curve": self._area_under_curve(tp, tn, fp, fn)
-        }
+        metrics = {}
+        if "Accuracy Rate" in metrics_to_calculate or "all" in metrics_to_calculate:
+            metrics["Accuracy Rate"] = self._accuracy_rate(tp, tn, fp, fn)
+        if "Error Rate" in metrics_to_calculate or "all" in metrics_to_calculate:
+            metrics["Error Rate"] = self._error_rate(tp, tn, fp, fn)
+        if "Sensitivity" in metrics_to_calculate or "all" in metrics_to_calculate:
+            metrics["Sensitivity"] = self._sensitivity(tp, fn)
+        if "Specificity" in metrics_to_calculate or "all" in metrics_to_calculate:
+            metrics["Specificity"] = self._specificity(tn, fp)
+        if "Geometric Mean" in metrics_to_calculate or "all" in metrics_to_calculate:
+            metrics["Geometric Mean"] = self._geometric_mean(tp, tn, fp, fn)
+        if "Area Under Curve" in metrics_to_calculate or "all" in metrics_to_calculate:
+            metrics["Area Under Curve"] = self._area_under_curve(tp, tn, fp, fn)
+        
         return metrics
 
     def _accuracy_rate(self, tp: int, tn: int, fp: int, fn: int) -> float:
@@ -120,6 +128,41 @@ class MetricsCalculator:
         specificity = self._specificity(tn, fp)
         return float((sensitivity + specificity) / 2)
 
+    @staticmethod
+    def scegli_metriche() -> List[str]:
+        """
+        Permette all'utente di scegliere le metriche da calcolare.
+        
+        Returns
+        -------
+        List[str]
+            Lista delle metriche scelte dall'utente.
+        """
+        print("Scegli le metriche da calcolare:")
+        print("1. Accuracy Rate")
+        print("2. Error Rate")
+        print("3. Sensitivity")
+        print("4. Specificity")
+        print("5. Geometric Mean")
+        print("6. Area Under Curve")
+        print("7. Calcola tutte le metriche")
+        metrics_choice = input("Inserisci i numeri delle metriche da calcolare separati da virgola (es. 1,2,3): ").split(',')
+
+        # Mappa dei numeri alle metriche
+        metrics_map = {
+            "1": "Accuracy Rate",
+            "2": "Error Rate",
+            "3": "Sensitivity",
+            "4": "Specificity",
+            "5": "Geometric Mean",
+            "6": "Area Under Curve",
+            "7": "all"
+        }
+
+        # Converti le scelte dell'utente in metriche
+        metrics_to_calculate = [metrics_map[choice.strip()] for choice in metrics_choice if choice.strip() in metrics_map]
+        return metrics_to_calculate
+
 
 # Esempio di utilizzo
 if __name__ == "__main__":
@@ -129,5 +172,9 @@ if __name__ == "__main__":
     metrics_calc = MetricsCalculator(true_positive=tp, true_negative=tn, false_positive=fp, false_negative=fn)
     cm = metrics_calc.confusion_matrix()
     print("Confusion Matrix:\n", cm)
-    metrics = metrics_calc.calculate_metrics(cm)
+    
+    # Chiedi all'utente quali metriche calcolare
+    metrics_to_calculate = MetricsCalculator.scegli_metriche()
+    
+    metrics = metrics_calc.calculate_metrics(cm, metrics_to_calculate)
     print("Metrics:\n", metrics)
