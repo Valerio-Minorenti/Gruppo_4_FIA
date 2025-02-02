@@ -148,6 +148,10 @@ class MetricsCalculator:
         print("7. Calcola tutte le metriche")
         metrics_choice = input("Inserisci i numeri delle metriche da calcolare separati da virgola (es. 1,2,3): ").split(',')
 
+        # Se l'utente sceglie "7", restituisce tutte le metriche
+        if "7" in metrics_choice:
+            return ["Accuracy Rate", "Error Rate", "Sensitivity", "Specificity", "Geometric Mean", "Area Under Curve"]
+
         # Mappa dei numeri alle metriche
         metrics_map = {
             "1": "Accuracy Rate",
@@ -155,8 +159,7 @@ class MetricsCalculator:
             "3": "Sensitivity",
             "4": "Specificity",
             "5": "Geometric Mean",
-            "6": "Area Under Curve",
-            "7": "all"
+            "6": "Area Under Curve"
         }
 
         # Converti le scelte dell'utente in metriche
