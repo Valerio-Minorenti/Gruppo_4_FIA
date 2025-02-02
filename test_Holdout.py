@@ -1,80 +1,77 @@
+import unittest
+import numpy as np
 import pandas as pd
-from Holdout import Holdouts  # Importa la classe per Holdout
-from Scaling_dati import Scalingdf  # Importa la classe per lo scaling
+from Holdout import Holdouts  
+from kNN_classifier import KNN  
 
-# percorso csv da mettere, volendo si può mettere direttamente ilnome file
-dataset_path = input("Inserisci il percorso assoluto: ").strip()
+class TestHoldouts(unittest.TestCase):
 
-# chiede come dividere
-while True:
-    try:
-        test_ratio = float(input("inserisci la percentuale dei dati per il testing (0.3 =30%): ").strip())
-        if 0 < test_ratio < 1:
-            break
-        else:
-            print("il valore deve essere tra 0 e 1")
-    except ValueError:
-        print("Errore: devi inserire un numero decimale tra 0 e 1 (es: 0.3 per 30%)!!")
+    @classmethod
+    def setUpClass(cls):
+        """
+        Configura un dataset di test prima di eseguire i test.
+        """
+        np.random.seed(42)  # Per risultati riproducibili
 
-# carica dtaset
-try:
-    df = pd.read_csv(dataset_path)
-    print("datset letto correttamente.")
-except FileNotFoundError:
-    print(f" Errore: Il file '{dataset_path}'non esiste.")
-    exit()
+        # Dataset di esempio con 100 campioni
+        cls.data = np.random.rand(100, 5) * 10  # Valori casuali tra 0 e 10
+        cls.labels = np.random.choice([0, 1], size=100)  # Etichette binarie (0 o 1)
 
-# prende le feature (colonne 2-10) e la label (colonna 11)
-features = df.iloc[:, 1:9]  # Colonne da 2 a 10
-labels = df.iloc[:, 10]     # Colonna 11
+        cls.test_ratio = 0.2  # 20% per il testing
+        cls.k = 3  # Numero di vicini per kNN
 
-# chiede come scalare i dati
-while True:
-    scaling_choice = input("Scrivere normalizza o standardizza o nessuna per decidere come scalare i dati: ").strip().lower()
-    if scaling_choice in ["normalizza", "standardizza", "nessuna"]:
-        break
-    else:
-        print("Errore: Scegli 'normalizza', 'standardizza' o 'nessuna'.")
+    def setUp(self):
+        """
+        Eseguito prima di ogni test.
+        """
+        self.holdout = Holdouts(self.test_ratio, self.data, self.labels)
 
-# Applica lo scaling solo alle feature (non alla label)
-if scaling_choice == "normalizza":
-    features = Scalingdf.normalizza(features)
-    print("Normalizzazione applicata.")
-elif scaling_choice == "standardizza":
-    features = Scalingdf.standardizza(features)
-    print("Standardizzazione applicata.")
-else:
-    print("Nessuna trasformazione applicata.")
+    def test_split_correctness(self):
+        """
+        Testa se il dataset è diviso correttamente in training e test set.
+        """
+        num_samples = len(self.data)
+        num_test_samples = int(num_samples * self.test_ratio)
+        num_train_samples = num_samples - num_test_samples
 
-# converte in modo che sia leggibile in numpy
-features = features.to_numpy()
-labels = labels.to_numpy()
+        # Esegui la suddivisione
+        results = self.holdout.generate_splits(self.k)
+        y_test, _ = results[0]  #  etichette reali
 
-# chiede quanti vicini per il KNN
-while True:
-    try:
-        k = int(input("inserire il numero di vicini per KNN: ").strip())
-        if k > 0:
-            break
-        else:
-            print("Errore: Il valore deve essere un numero intero positivo.")
-    except ValueError:
-        print("Errore: Devi inserire un numero intero positivo.")
+        self.assertEqual(len(y_test), num_test_samples, "Il numero di campioni nel test set è errato")
 
-# inizializza Holdout
-holdout = Holdouts(test_ratio=test_ratio, data=features, labels=labels)
+    def test_knn_predictions(self):
+        """
+        Testa se il kNN genera previsioni della stessa lunghezza delle etichette reali.
+        """
+        results = self.holdout.generate_splits(self.k)
+        y_test, y_pred = results[0]  # Prendiamo etichette reali e predette
 
-# inizio test
-try:
-    results = holdout.generate_splits(k)
+        self.assertEqual(len(y_test), len(y_pred), "Le previsioni del kNN non corrispondono al numero di test sample")
 
-    if results:
-        y_true, y_pred = results[0]  # estrae etichette reali e previste
-        print("Holdout eseguito con successo.")
-        print(f"Numero di campioni nel test set: {len(y_true)}")
-        print(f"Esempio di etichette reali: {y_true[:10]}")
-        print(f"Esempio di etichette predette: {y_pred[:10]}")
-    else:
-        print("Errore nell'esecuzione dell'Holdout.")
-except Exception as e:
-    print(f"Errore: {e}")
+    def test_knn_values_are_binary(self):
+        """
+        Testa se le previsioni del kNN sono valori binari (0 o 1).
+        """
+        results = self.holdout.generate_splits(self.k)
+        _, y_pred = results[0]
+
+        unique_values = set(y_pred)
+        self.assertTrue(unique_values.issubset({0, 1}), "Il kNN dovrebbe restituire solo 0 o 1")
+
+    def test_invalid_test_ratio(self):
+        """
+        Verifica che venga sollevato un errore se il test_ratio è fuori dai limiti validi.
+        """
+        with self.assertRaises(ValueError):
+            Holdouts(1.5, self.data, self.labels)  # test_ratio > 1 non è valido
+
+    def test_empty_training_set(self):
+        """
+        Verifica che venga sollevato un errore se il training set è vuoto.
+        """
+        with self.assertRaises(ValueError):
+            Holdouts(1, self.data, self.labels).generate_splits(self.k)  # Troppo poco training set
+
+if __name__ == "__main__":
+    unittest.main()
