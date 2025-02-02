@@ -176,22 +176,10 @@ def main():
                     print(f"Numero di '2' nelle etichette reali: {count_2_real}")
                     print(f"Numero di '2' nelle etichette predette: {count_2_pred}")
                     
-                    # Calcolo delle metriche
-                    tp, tn, fp, fn = MetricsCalculator.confu(y_test = y_true,predictions = y_pred)
-                    metrics_calc = MetricsCalculator(true_positive=tp, true_negative=tn, false_positive=fp, false_negative=fn)
-                    cm = metrics_calc.confusion_matrix()
-                    print("\nMatrice di confusione:")
-                    print(cm)
-
-                    metrics = metrics_calc.calculate_metrics(cm)
-                    print("\nMetriche calcolate:")
-                    for metric, value in metrics.items():
-                        print(f"{metric}: {value:.4f}")
-                else:
-                    print("Errore nell'esecuzione dell'Holdout.")
-                break  # Esce dal ciclo dopo aver eseguito l'Holdout
             except Exception as e:
                 print(f"Si è verificato un errore durante l'esecuzione dell'Holdout: {e}")
+            
+            break
 
         elif method_choice == "2":
             method_input = "Random Subsampling"
@@ -209,11 +197,10 @@ def main():
             try:
                 df = pd.read_csv(dataset_path)
                 print("Dataset letto correttamente.")
-        
+    
             except FileNotFoundError:
                 print(f"Errore: Il file '{dataset_path}' non esiste.")
                 exit()
-
 
             # Inizializzazione di Random Subsampling
             try:
@@ -222,7 +209,7 @@ def main():
                     x=df.iloc[:, :-1],        # Assumendo che la prima colonna sia un ID o indice
                     y=df['classtype_v1'],      # La colonna delle etichette
                     k_experiments=n_folds,     # Numero di esperimenti
-                classifier_class=KNN,      # Classe del classificatore
+                    classifier_class=KNN,      # Classe del classificatore
                     classifier_params={'k': k},  # Parametri del classificatore
                     test_size=0.2              # Percentuale di dati per il test set
                 )
@@ -230,31 +217,19 @@ def main():
                 print(f"Errore durante l'inizializzazione del Random Subsampling: {e}")
                 exit()
 
-                # Esegui gli esperimenti
+            # Esegui gli esperimenti
             try:
                 results = random_subsampling.run_experiments()
                 if not results:
                     raise ValueError("Nessun risultato è stato generato. Verifica i dati di input e i parametri.")
 
-    # Stampa dei risultati degli esperimenti
+                # Stampa dei risultati degli esperimenti
                 for experiment_index, (y_test, predictions) in enumerate(results):
                     print(f"\nEsperimento {experiment_index + 1}:")
 
-            # Stampa delle etichette reali e delle predizioni
+                    # Stampa delle etichette reali e delle predizioni
                     print("\nEtichette reali (y_test):", y_test)
                     print("Predizioni (predictions):", predictions)
-
-        # Calcolo delle metriche
-                    tp, tn, fp, fn = MetricsCalculator.confu(y_test, predictions)
-                    metrics_calc = MetricsCalculator(true_positive=tp, true_negative=tn, false_positive=fp, false_negative=fn)
-                    cm = metrics_calc.confusion_matrix()
-                    print("\nMatrice di confusione:")
-                    print(cm)
-
-                    metrics = metrics_calc.calculate_metrics(cm)
-                    print("\nMetriche calcolate:")
-                    for metric, value in metrics.items():
-                        print(f"{metric}: {value:.4f}")
 
             except ValueError as ve:
                 print(f"Errore nei dati di input o nei parametri: {ve}")
@@ -262,7 +237,7 @@ def main():
                 print(f"Si è verificato un errore durante l'esecuzione del Random Subsampling: {e}")
 
             break
-    
+
         elif method_choice == "3":
             method_input = "stratified cross validation"
 
@@ -295,7 +270,6 @@ def main():
                 if not results:
                     raise ValueError("Nessun risultato è stato generato. Verifica i dati di input e i parametri.")
 
-                # Stampa dei risultati degli esperimenti
                 for experiment_index, (y_test, predictions) in enumerate(results):
                     print(f"\nEsperimento {experiment_index + 1}:")
 
@@ -310,30 +284,54 @@ def main():
                         print(f"Percentuale di 4 nel test: {count_4_Test / (count_4_Test + count_2_Test):.2%}")
                         print(f"Percentuale di 2 nel test: {count_2_Test / (count_4_Test + count_2_Test):.2%}")
 
-                        # Stampa delle etichette reali e delle predizioni
-                        print("\nEtichette reali (y_test):", [int(val) for val in y_test])
-                        print("Predizioni (predictions):", [int(val) for val in predictions])
-
-                    # Calcolo delle metriche
-                    tp, tn, fp, fn = MetricsCalculator.confu(y_test, predictions)
-                    metrics_calc = MetricsCalculator(true_positive=tp, true_negative=tn, false_positive=fp, false_negative=fn)
-                    cm = metrics_calc.confusion_matrix()
-                    print("\nMatrice di confusione:")
-                    print(cm)
-
-                    metrics = metrics_calc.calculate_metrics(cm)
-                    print("\nMetriche calcolate:")
-                    for metric, value in metrics.items():
-                        print(f"{metric}: {value:.4f}")
+                    # Stampa delle etichette reali e delle predizioni
+                    print("\nEtichette reali (y_test):", [int(val) for val in y_test])
+                    print("Predizioni (predictions):", [int(val) for val in predictions])
 
             except ValueError as ve:
                 print(f"Errore nei dati di input o nei parametri: {ve}")
 
             break
-            
+
         else:
             print("Scelta non valida. Inserisci '1' per Holdout, '2' per Random Subsampling o '3' per Stratified Cross Validation.")
-    
+
+ # Chiedi all'utente quali metriche calcolare
+    metrics_to_calculate = MetricsCalculator.scegli_metriche()
+
+    # Stampa dei risultati degli esperimenti e calcolo delle metriche
+    try:
+        all_metrics = []
+        for experiment_index, (y_test, predictions) in enumerate(results):
+            print(f"\nEsperimento {experiment_index + 1}:")
+
+            # Stampa delle etichette reali e delle predizioni
+            print("\nEtichette reali (y_test):", y_test)
+            print("Predizioni (predictions):", predictions)
+
+            # Calcolo delle metriche
+            tp, tn, fp, fn = MetricsCalculator.confu(y_test, predictions)
+            metrics_calc = MetricsCalculator(true_positive=tp, true_negative=tn, false_positive=fp, false_negative=fn)
+            cm = metrics_calc.confusion_matrix()
+            print("\nMatrice di confusione:")
+            print(cm)
+
+            metrics = metrics_calc.calculate_metrics(cm, metrics_to_calculate)
+            all_metrics.append(metrics)
+            print("\nMetriche calcolate:")
+            for metric, value in metrics.items():
+                print(f"{metric}: {value:.4f}")
+
+        # Calcolo della media delle metriche
+        avg_metrics = {metric: np.mean([m[metric] for m in all_metrics]) for metric in metrics_to_calculate}
+        print("\nMedia delle metriche per K esperimenti:")
+        for metric, value in avg_metrics.items():
+            print(f"{metric}: {value:.4f}")
+
+    except ValueError as ve:
+        print(f"Errore nei dati di input o nei parametri: {ve}")
+    except Exception as e:
+        print(f"Si è verificato un errore durante il calcolo delle metriche: {e}")
 
 if __name__ == "__main__":
     main()
