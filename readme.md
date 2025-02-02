@@ -5,6 +5,32 @@
 Questo progetto mira a sviluppare un programma per analizzare un dataset contenente informazioni su vari tipi di cellule tumorali e determinare se un tumore è benigno o maligno. Il programma utilizza il `kNN_classifier` per effettuare la classificazione dei dati. Le tecniche di valutazione implementate includono `Holdout`, `Random_Subsampling` e `Stratified Cross Validation`, a scelta dell'utente. L'obiettivo finale è testare le prestazioni del modello e valutarne l'efficacia tramite metriche e grafici, che verranno salvati in un file di output. Il programma è stato progettato per essere flessibile e personalizzabile, permettendo all'utente di specificare le opzioni di input.
 
 ## Dataset
+Dopo una lettura del problema si conclude come il raggiungimento dell’obiettivo finale per classificare i tumori si divida in vari passi. Si è pensato, quindi, di svolgere il primo compito e di eseguire il Data Processing. Per motivi di comodità, si è pensato di voler convertire il file CSV fornito in un file XLSX. Quindi si è deciso di stilare una lista di punti:
+
+1)	Convertire il file;
+2)	Eliminare le colonne non utili ai fini del progetto;
+3)	Ordinare gli ID;
+4)	Eliminare le righe duplicate;
+5)	Convertire tutti i valori nelle celle in numeri;
+6)	Sostituire i valori numerici errati con valori accettabili;
+7)	Correggere i valori sotto la colonna Class Type;
+8)	Separare le colonne con i features da quelle con le classi;
+9)	Eliminare eventuali righe uguali rimaste.
+Le celle con valore pari a 0 sono convertite in 1, e quelle superiore a 10 in valore pari a 10.
+Le celle sotto la colonna CLASS TYPE con valore pari a 1 sono convertite in 2.
+
+## Scaling dei Dati
+Lo scaling è stato eseguito per rendere le feature comparabili ed evitare che valori con scale diverse influenzino algoritmi basati sulla distanza, come KNN.
+
+Sono state applicate due tecniche:
+
+# Standardizzazione (Z-score normalization)
+Trasforma i dati con media 0 e deviazione standard 1.
+
+# Normalizzazione (Min-Max Scaling)
+Scala i dati tra 0 e 1.
+
+L’utente sceglie il metodo; in caso di errore viene applicata la normalizzazione di default.
 
 ## Stesura del codice
 
@@ -18,6 +44,8 @@ Questo algoritmo viene utilizzato per classificare i dati del dataset in base al
 
 
 ## Tecniche di Valutazione
+## Holdout
+`Holdout` è una tecnica di validazione che divide il dataset in due set distinti, uno per l'addestramento del modello e uno per la valutazione delle sue prestazioni. La divisione avviene in base alla percentuale scelta dall'utente, ad esempio, 70% per l'addestramento e 30% per il test.
 
 ### Implementazione del Random Subsampling
 
