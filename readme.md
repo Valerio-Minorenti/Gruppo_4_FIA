@@ -20,15 +20,15 @@ Dopo una lettura del problema si conclude come il raggiungimento dell’obiettiv
 Le celle con valore pari a 0 sono convertite in 1, e quelle superiore a 10 in valore pari a 10.
 Le celle sotto la colonna CLASS TYPE con valore pari a 1 sono convertite in 2.
 
-## Scaling dei Dati
+### Scaling dei Dati
 Lo scaling è stato eseguito per rendere le feature comparabili ed evitare che valori con scale diverse influenzino algoritmi basati sulla distanza, come KNN.
 
 Sono state applicate due tecniche:
 
-# Standardizzazione (Z-score normalization)
+### Standardizzazione (Z-score normalization)
 Trasforma i dati con media 0 e deviazione standard 1.
 
-# Normalizzazione (Min-Max Scaling)
+### Normalizzazione (Min-Max Scaling)
 Scala i dati tra 0 e 1.
 
 L’utente sceglie il metodo; in caso di errore viene applicata la normalizzazione di default.
@@ -44,8 +44,8 @@ Prima di eseguire l'applicazione, è fondamentale installare tutte le dipendenze
 Questo algoritmo viene utilizzato per classificare i dati del dataset in base alla vicinanza ai punti di dati esistenti. La classe `kNN_classifier` è stata sviluppata per eseguire la classificazione e restituire i risultati in base ai parametri specificati dall'utente.
 
 
-## Tecniche di Valutazione
-## Holdout
+## Model Evaluation
+### Holdout
 `Holdout` è una tecnica di validazione che divide il dataset in due set distinti, uno per l'addestramento del modello e uno per la valutazione delle sue prestazioni. La divisione avviene in base alla percentuale scelta dall'utente, ad esempio, 70% per l'addestramento e 30% per il test.
 
 ### Implementazione del Random Subsampling
@@ -56,7 +56,7 @@ Questa tecnica divide casualmente il dataset in sottoinsiemi di training e test 
 
 La Stratified Cross Validation divide il dataset in K- folds mantenendo la proporzione delle classi in ogni fold. Questo assicura che ogni fold sia rappresentativo dell'intero dataset. La classe `StratifiedCrossValidation` è stata sviluppata per eseguire questa tecnica.
 
-## Metriche di valutazione
+### Metriche di valutazione
 
 Le metriche servono per valutare la performance del modello. Si dispone delle seguenti metriche:
 - **Accuracy**: La percentuale di classificazioni corrette sul totale delle previsioni.
