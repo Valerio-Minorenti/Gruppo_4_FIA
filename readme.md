@@ -16,6 +16,7 @@ Dopo una lettura del problema si conclude come il raggiungimento dell’obiettiv
 7)	Correggere i valori sotto la colonna Class Type;
 8)	Separare le colonne con i features da quelle con le classi;
 9)	Eliminare eventuali righe uguali rimaste.
+
 Le celle con valore pari a 0 sono convertite in 1, e quelle superiore a 10 in valore pari a 10.
 Le celle sotto la colonna CLASS TYPE con valore pari a 1 sono convertite in 2.
 
