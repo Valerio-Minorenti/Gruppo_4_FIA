@@ -1,8 +1,8 @@
 import unittest
 import numpy as np
 import pandas as pd
-from Stratified_Cross_Validation import StratifiedCrossValidation  # Assicurati che il file si chiami Stratified_Cross_Validation.py
-from kNN_classifier import KNN  # Importa il tuo classificatore KNN
+from Validation.Stratified_Cross_Validation import StratifiedCrossValidation
+
 
 class TestStratifiedCrossValidation(unittest.TestCase):
 

@@ -1,8 +1,7 @@
 import unittest
 import numpy as np
-import pandas as pd
-from Holdout import Holdouts  
-from kNN_classifier import KNN  
+from Validation.Holdout import Holdouts
+
 
 class TestHoldouts(unittest.TestCase):
 

@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 import pandas as pd
-from Random_Subsampling import RandomSubsampling  # Assicurati che il file si chiami Random_Subsampling.py
+from Validation.Random_Subsampling import RandomSubsampling  # Assicurati che il file si chiami Random_Subsampling.py
 from kNN_classifier import KNN  # Importa il tuo classificatore KNN
 
 class TestRandomSubsampling(unittest.TestCase):

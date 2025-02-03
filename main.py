@@ -1,13 +1,13 @@
 import numpy as np
 import pandas as pd
 from kNN_classifier import KNN
-from Algoritmo_manipolazione_dati import ManipolaDati
-from Holdout import Holdouts
-from Random_Subsampling import RandomSubsampling
-from Stratified_Cross_Validation import StratifiedCrossValidation
-from Scaling_dati import Scalingdf, GestisciScaling
-from Metrics import MetricsCalculator
-from Visual_Metrics import MetricsSaver
+from Data_Preprocessing.Algoritmo_manipolazione_dati import ManipolaDati
+from Validation.Holdout import Holdouts
+from Validation.Random_Subsampling import RandomSubsampling
+from Validation.Stratified_Cross_Validation import StratifiedCrossValidation
+from Data_Preprocessing.Scaling_dati import GestisciScaling
+from Performance_Evaluation.Metrics import MetricsCalculator
+from Performance_Evaluation.Visual_Metrics import MetricsSaver
 
 def main():
     try:

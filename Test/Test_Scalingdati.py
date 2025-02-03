@@ -1,6 +1,6 @@
 import unittest
 import pandas as pd
-from Scaling_dati import Scalingdf, GestisciScaling 
+from Data_Preprocessing.Scaling_dati import Scalingdf, GestisciScaling
 class TestScalingdf(unittest.TestCase):
     
     def setUp(self):
