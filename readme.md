@@ -20,6 +20,8 @@ Dopo una lettura del problema si conclude come il raggiungimento dell’obiettiv
 Le celle con valore pari a 0 sono convertite in 1, e quelle superiore a 10 in valore pari a 10.
 Le celle sotto la colonna CLASS TYPE con valore pari a 1 sono convertite in 2.
 
+Il codice è commentato per aiutare l'utente a comprendere il funzionamento di ogni sua parte. Inoltre, mentre viene eseguito, stampa numerosi messaggi nel terminale per indicare cosa sta accadendo in ogni fase dell'elaborazione. Per garantire la portabilità, il codice chiede all'utente di specificare i percorsi di input e output invece di utilizzare percorsi statici predefiniti.
+
 ### Scaling dei Dati
 Lo scaling è stato eseguito per rendere le feature comparabili ed evitare che valori con scale diverse influenzino algoritmi basati sulla distanza, come KNN.
 
@@ -63,11 +65,40 @@ Le metriche servono per valutare la performance del modello. Si dispone delle se
 - **Error Rate**: La percentuale di classificazioni errate sul totale delle previsioni. Questa metrica indica quanto spesso il modello sbaglia nella classificazione dei dati.
 - **Sensitivity**: La capacità del modello di identificare correttamente i positivi ( TP/ (TP + FN)).
 - **Specificity**: La capacità del modello di identificare correttamente i negativi (TN/ (TN + FP)).
-- **Geometric Mean**: La media geometrica di Sensitivity e Specificity, utile per valutare il bilanciamento tra le due metriche. (inoltre nella file `metrics.py` è stata calcolata la media geometrica senza effettuare la radice quadrata poichè va ad essere computazionalmente meno oneroso ed il significato rimane inalterato, poichè più è grande la media geometrica e migliore è il modello).
+- **Geometric Mean**: La media geometrica di Sensitivity e Specificity, utile per valutare il bilanciamento tra le due metriche.
 - **Area Under the Curve**: Una misura della capacità del modello di distinguere tra classi positive e negative.
 
+### Risultati
+I risultati dell'esecuzione del programma, a seconda dell'input dell'utente, sono i seguenti:
+`Holdout`:
+Si ottiene un file di output con il path del file in formato Excel nel quale sono salvate le metriche di validazione del modello e un plot:
+
+
+- Point Plot: il valore della metrica associata.
+
+
+`Random Subsampling` e `Stratified Cross Validation`:
+Si ottiene un file di output con il path del file in formato Excel, dove sono salvate le metriche di validazione del modello e due plot:
+
+
+- Line Plot: Illustra per ciascuna metrica come i valori cambiano attraverso diversi esperimenti
+
+
+- Box Plot: Per ciascuna metrica mostra la distribuzione dei valori.
+
+
+Facoltativamente, è possibile generare anche:
+
+
+- Confusion Matrix: Visualizza la matrice di confusione.
+
+
+- ROC Curve: Visualizza la curva ROC e calcola l'AUC.
+
++
 ### Personalizzazione per l'utente
 
 - `numero_di_vicini (k)`: Questo parametro determina il numero di vicini da considerare nell'algoritmo di apprendimento.
 - `numero_di_esperimenti (K)`: Questo parametro specifica il numero di esperimenti per eseguire più iterazioni dell'algoritmo, per i metodi `Random Subsampling` e `Stratified Cross Validation`.
-
+- Metodo di valutazione: Puoi scegliere tra Holdout, Random Subsampling e Stratified Cross Validation. Queste opzioni determinano come vengono valutate le performance del modello.
+- Path del file di output: Puoi specificare il path del file di output in cui salvare i risultati dell'analisi.
