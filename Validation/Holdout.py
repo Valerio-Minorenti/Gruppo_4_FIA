@@ -69,7 +69,7 @@ class Holdouts(ValidationStrategy):
         results = [(y_test, predictions)]
         return results
 
-
+"""
 # Test rapido (opzionale)
 if __name__ == '__main__':
     # Dati di esempio
@@ -93,3 +93,4 @@ if __name__ == '__main__':
             print("Etichette predette:", y_pred)
     except ValueError as e:
         print("Errore:", e)
+"""

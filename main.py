@@ -13,9 +13,8 @@ from Performance_Evaluation.Visual_Metrics import MetricsSaver
 def main():
     try:
         # Input e output path che vanno messi dall'utente
-        input_path = input("Inserire il percorso assoluto di input: ").strip()
-        output_path = input("Inserire il percorso assoluto di output: ").strip().replace('"',
-                                                                                                      '')  # Rimuove eventuali virgolette
+        input_path = input("Inserire il percorso assoluto di input: ").strip().replace('"','')
+        output_path = input("Inserire il percorso assoluto di output: ").strip().replace('"','')  # Rimuove eventuali virgolette
 
         # Creazione istanza di classe per manipolare i dati
         manipolatore = ManipolaDati(input_path, output_path)
@@ -112,7 +111,7 @@ def main():
     # SEZIONE: Scelta metodo di split / validazione
     # ------------------------------------------------------------------------------------
     dataset_path = input(
-        "Inserisci il percorso del (scalato) da utilizzare: ").strip()
+        "Inserisci il percorso del (scalato) da utilizzare (premere invio per usare il file scalato): ").strip()
     if not dataset_path:
         dataset_path = "Dati_Progetto_Gruppo4_scalato.csv"
 

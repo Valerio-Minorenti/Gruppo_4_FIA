@@ -102,4 +102,27 @@ class StratifiedCrossValidation(ValidationStrategy):
 
         return results
 
+# Test di esempio (se vuoi provarlo al volo)
+if __name__ == '__main__':
+    data = {
+        'feature1': [1, 2, 3, 4, 5, 6, 7, 8, 8],
+        'feature2': [0.5, 4.3, 3.3, 4.0, 2.5, 5.7, 5.3, 7.4, 8.1],
+        'Class':    [2,   4,   4,   4,   2,   2,   4,   4,   4]
+    }
 
+    df_example = pd.DataFrame(data)
+    print("DataFrame di esempio:")
+    print(df_example)
+
+    K = int(input("\nInserisci il numero di fold K (ad es. 3): "))
+    k_neighbors = 3
+
+    # Istanzia la classe e richiama generate_splits()
+    splitter = StratifiedCrossValidation(K=K, df=df_example, class_column="Class", k_neighbors=k_neighbors)
+    results = splitter.generate_splits()
+
+    # Stampa delle etichette reali e predette per ogni fold
+    for experiment_index, (y_test, predictions) in enumerate(results, start=1):
+        print(f"\nFold {experiment_index}:")
+        print("Etichette reali (y_test):", [int(val) for val in y_test])
+        print("Predizioni (predictions):", [int(val) for val in predictions])

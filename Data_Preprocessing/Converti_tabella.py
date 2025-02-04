@@ -1,5 +1,5 @@
 #import pandas as pd # type: ignore
-from Algoritmo_manipolazione_dati import ManipolaDati
+from Data_Preprocessing.Algoritmo_manipolazione_dati import ManipolaDati
 if __name__ == "__main__":
     #input e output path che vanno messi dall'utente
     input_path = input("Inserire il percorso assoluto di input: ").strip()
