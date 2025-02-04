@@ -68,7 +68,7 @@ Le metriche servono per valutare la performance del modello. Si dispone delle se
 - **Geometric Mean**: La media geometrica di Sensitivity e Specificity, utile per valutare il bilanciamento tra le due metriche.
 - **Area Under the Curve**: Una misura della capacità del modello di distinguere tra classi positive e negative.
 
-### Risultati
+## Risultati
 I risultati dell'esecuzione del programma, a seconda dell'input dell'utente, sono i seguenti:
 `Holdout`:
 Si ottiene un file di output con il path del file in formato Excel nel quale sono salvate le metriche di validazione del modello e un plot:
@@ -95,7 +95,7 @@ Facoltativamente, è possibile generare anche:
 
 - ROC Curve: Visualizza la curva ROC e calcola l'AUC.
 
-+
+
 ### Personalizzazione per l'utente
 
 - `numero_di_vicini (k)`: Questo parametro determina il numero di vicini da considerare nell'algoritmo di apprendimento.
