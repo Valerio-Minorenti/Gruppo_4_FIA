@@ -1,59 +1,95 @@
 import pandas as pd
 import numpy as np
 from kNN_classifier import KNN  # Importa la classe KNN personalizzata
+from Validation.Validation_Strategy import ValidationStrategy  # Importa la classe astratta
 
-# Classe Holdout
-class Holdouts:
+class Holdouts(ValidationStrategy):
     def __init__(self, test_ratio, data, labels):
         """
-        Imposta la proporzione tra training e testing.
+        Inizializza i parametri per la strategia di validazione Holdout.
 
         Args:
-            test_ratio (float): Percentuale per il testing.
-            data (np.ndarray): Dataset delle features.
-            labels (np.ndarray): Dataset delle etichette.
+            test_ratio (float): Percentuale per il testing (0 < test_ratio < 1).
+            data (np.ndarray o pd.DataFrame): Dataset delle feature.
+            labels (np.ndarray o pd.Series): Dataset delle etichette.
         """
         if not (0 < test_ratio < 1):
-            raise ValueError("test_ratio deve essere un valore tra 0 e 1.")
+            raise ValueError("test_ratio deve essere un valore tra 0 e 1 (es. 0.2 per 20%).")
+
         self.test_ratio = test_ratio
+        # Convertiamo in DataFrame/Series per coerenza interna
         self.features = pd.DataFrame(data)
         self.labels = pd.Series(labels)
 
-    def generate_splits(self, k):
+    def generate_splits(self, k=None):
         """
+        Implementazione del metodo astratto di ValidationStrategy.
         Divide il dataset in training e testing, allena il kNN e restituisce le previsioni.
 
         Args:
-            k (int): Numero di vicini per il kNN.
+            k (int, opzionale): Numero di vicini per il kNN.
+                                Se non fornito, lancia un errore o imposta un default.
 
         Returns:
-            list[tuple[list[int], list[int]]]: Lista con singola tupla (y_veri, y_predetti).
+            list[tuple[list[int], list[int]]]: Lista con una singola tupla (y_veri, y_predetti).
         """
-        data, labels = self.features, self.labels
+        if k is None:
+            # Puoi decidere un default o lanciare un errore
+            raise ValueError("Parametro 'k' non specificato. Devi fornire il numero di vicini per il kNN.")
 
+        # Ricaviamo data e labels
+        data, labels = self.features, self.labels
         num_samples = len(data)
         num_test_samples = int(num_samples * self.test_ratio)
 
         if num_test_samples == num_samples:
             raise ValueError("Il training set è vuoto. Riduci il valore di test_ratio.")
 
-        # Gli indici sono mescolati
+        # Creiamo indici mescolati
         shuffled_indices = np.random.permutation(num_samples)
         test_indices = shuffled_indices[:num_test_samples]
         train_indices = shuffled_indices[num_test_samples:]
 
-        # Divide i dati
-        x_train, x_test = data.iloc[train_indices].to_numpy(), data.iloc[test_indices].to_numpy()
-        y_train, y_test = labels.iloc[train_indices].to_numpy(), labels.iloc[test_indices].to_numpy()
+        # Suddivisione in train/test
+        x_train = data.iloc[train_indices].to_numpy()
+        x_test  = data.iloc[test_indices].to_numpy()
+        y_train = labels.iloc[train_indices].to_numpy()
+        y_test  = labels.iloc[test_indices].to_numpy()
 
-        # Inizializza il kNN
+        # Inizializza il kNN con k vicini
         knn_model = KNN(k)
         knn_model.fit(x_train, y_train)
 
-        # Predice
+        # Predice sul test set
         predictions = knn_model.predict(x_test)
+        predictions = [int(pred) for pred in predictions]
+        y_test = [int(ytest) for ytest in y_test]
 
-        # Lista tuple (etichette reali, etichette previste)
-        results = [(y_test.tolist(), predictions)]
-
+        # Restituisce una lista con una singola tupla (etichette reali, etichette previste)
+        results = [(y_test, predictions)]
         return results
+
+
+# Test rapido (opzionale)
+if __name__ == '__main__':
+    # Dati di esempio
+    df_data = {
+        'feature1': [5, 2, 7, 1, 9, 4],
+        'feature2': [0.2, 0.5, 0.1, 0.9, 1.2, 0.3],
+        'Class':    [2,    2,   4,   2,   4,   4]
+    }
+    df = pd.DataFrame(df_data)
+
+    X = df[['feature1', 'feature2']].values
+    y = df['Class'].values
+
+    holdout = Holdouts(test_ratio=0.3, data=X, labels=y)
+
+    # Proviamo a generare gli split con k=3
+    try:
+        results_holdout = holdout.generate_splits(k=3)
+        for y_true, y_pred in results_holdout:
+            print("Etichette reali:", y_true)
+            print("Etichette predette:", y_pred)
+    except ValueError as e:
+        print("Errore:", e)

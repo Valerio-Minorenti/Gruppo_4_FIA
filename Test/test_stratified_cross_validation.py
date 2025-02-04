@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 import pandas as pd
-from Validation.Stratified_Cross_Validation import StratifiedCrossValidation
+from Validation.Stratified_Cross_Validation import StratifiedCrossValidation  # Assicurati che il file si chiami Stratified_Cross_Validation.py
 
 
 class TestStratifiedCrossValidation(unittest.TestCase):
