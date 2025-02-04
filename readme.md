@@ -70,6 +70,8 @@ Le metriche servono per valutare la performance del modello. Si dispone delle se
 
 ## Risultati
 I risultati dell'esecuzione del programma, a seconda dell'input dell'utente, sono i seguenti:
+
+
 `Holdout`:
 Si ottiene un file di output con il path del file in formato Excel nel quale sono salvate le metriche di validazione del modello e un plot:
 
