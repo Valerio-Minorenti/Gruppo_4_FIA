@@ -20,7 +20,7 @@ Dopo una lettura del problema si conclude come il raggiungimento dell’obiettiv
 Le celle con valore pari a 0 sono convertite in 1, e quelle superiore a 10 in valore pari a 10.
 Le celle sotto la colonna CLASS TYPE con valore pari a 1 sono convertite in 2.
 
-Il codice è commentato per aiutare l'utente a comprendere il funzionamento di ogni sua parte. Inoltre, mentre viene eseguito, stampa numerosi messaggi nel terminale per indicare cosa sta accadendo in ogni fase dell'elaborazione. Per garantire la portabilità, il codice chiede all'utente di specificare i percorsi di input e output invece di utilizzare percorsi statici predefiniti.
+Il codice è commentato per aiutare l'utente a comprendere il funzionamento di ogni sua parte. Inoltre, mentre viene eseguito, stampa numerosi messaggi nel terminale per indicare cosa sta accadendo in ogni fase dell'elaborazione. 
 
 ### Scaling dei Dati
 Lo scaling è stato eseguito per rendere le feature comparabili ed evitare che valori con scale diverse influenzino algoritmi basati sulla distanza, come KNN.
@@ -98,6 +98,7 @@ Facoltativamente, è possibile generare anche:
 
 ### Personalizzazione per l'utente
 
+- Il codice chiede all'utente di specificare i paths di input e output invece di utilizzare percorsi statici predefiniti.
 - `numero_di_vicini (k)`: Questo parametro determina il numero di vicini da considerare nell'algoritmo di apprendimento.
 - `numero_di_esperimenti (K)`: Questo parametro specifica il numero di esperimenti per eseguire più iterazioni dell'algoritmo, per i metodi `Random Subsampling` e `Stratified Cross Validation`.
 - Metodo di valutazione: Puoi scegliere tra Holdout, Random Subsampling e Stratified Cross Validation. Queste opzioni determinano come vengono valutate le performance del modello.
