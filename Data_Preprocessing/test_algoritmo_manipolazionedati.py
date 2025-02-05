@@ -1,7 +1,7 @@
 import unittest
 import pandas as pd
 import os
-from Data_Preprocessing.Algoritmo_manipolazione_dati import ManipolaDati
+from Algoritmo_manipolazione_dati import ManipolaDati
 
 
 class TestManipolaDati(unittest.TestCase):
