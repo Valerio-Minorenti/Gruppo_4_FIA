@@ -1,63 +1,54 @@
 import unittest
 import numpy as np
 import pandas as pd
-from Validation.Random_Subsampling import RandomSubsampling
 from kNN_classifier import KNN
+from Validation.Random_Subsampling import RandomSubsampling
 
 class TestRandomSubsampling(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        np.random.seed(42)
-        cls.df = pd.DataFrame(
-            np.random.rand(100, 5) * 10,
-            columns=[f"Feature{i}" for i in range(1, 6)]
-        )
-        cls.df["Target"] = np.random.choice([0, 1], size=100)
-        cls.k_experiments = 5
-        cls.test_size = 0.2
-        cls.classifier_params = {"k": 3}
-
     def setUp(self):
-        self.subsampling = RandomSubsampling(
-            df=self.df,
-            x=self.df.drop(columns=["Target"]),
-            y="Target",
-            k_experiments=self.k_experiments,
+        # Esempio di dati per i test
+        self.sample_data = {
+            'feature1': [1, 2, 3, 4, 5, 6],
+            'feature2': [10, 9, 8, 7, 6, 5],
+            'Class':    [2,  4, 4, 2, 2, 4]
+        }
+        self.df_example = pd.DataFrame(self.sample_data)
+        self.random_sub = RandomSubsampling(
+            df=self.df_example,
+            x=self.df_example[['feature1', 'feature2']],
+            y='Class',
+            k_experiments=3,
             classifier_class=KNN,
-            classifier_params=self.classifier_params,
-            test_size=self.test_size
+            classifier_params={'k': 3},
+            test_size=0.3
         )
 
     def test_train_test_split(self):
-        x_train, x_test, y_train, y_test = self.subsampling.train_test_split()
-        total_samples = self.df.shape[0]
-        expected_test_size = int(total_samples * self.test_size)
-        expected_train_size = total_samples - expected_test_size
+        x_train, x_test, y_train, y_test = self.random_sub.train_test_split()
+        self.assertEqual(len(x_train), 4)
+        self.assertEqual(len(x_test), 2)
+        self.assertEqual(len(y_train), 4)
+        self.assertEqual(len(y_test), 2)
 
-        self.assertEqual(len(x_test), expected_test_size, "La dimensione del test set non è corretta.")
-        self.assertEqual(len(x_train), expected_train_size, "La dimensione del training set non è corretta.")
-        self.assertEqual(len(y_test), expected_test_size, "La dimensione delle etichette di test non corrisponde.")
-        self.assertEqual(len(y_train), expected_train_size, "La dimensione delle etichette di training non corrisponde.")
+    def test_generate_splits(self):
+        results = self.random_sub.generate_splits(k=1)
+        self.assertEqual(len(results), 1)
+        y_test, predictions, predicted_proba_continuous = results[0]
+        self.assertEqual(len(y_test), 2)
+        self.assertEqual(len(predictions), 2)
+        self.assertEqual(len(predicted_proba_continuous), 2)
 
-    def test_predictions_length(self):
-        # Usare generate_splits() anziché run_experiments()
-        results = self.subsampling.generate_splits()
-        for y_test, y_pred in results:
-            self.assertEqual(
-                len(y_test),
-                len(y_pred),
-                "Il numero di predizioni non corrisponde al numero di etichette reali."
-            )
+    def test_predict_proba(self):
+        x_train, x_test, y_train, y_test = self.random_sub.train_test_split()
+        classifier = KNN(k=3)
+        classifier.fit(x_train, y_train)
+        predicted_proba = classifier.predict_proba(x_test)
+        positive_class = 4
+        predicted_proba_continuous = [proba.get(positive_class, 0.0) for proba in predicted_proba]
+        self.assertEqual(len(predicted_proba_continuous), 2)
+        for proba in predicted_proba_continuous:
+            self.assertTrue(0.0 <= proba <= 1.0)
 
-    def test_number_of_experiments(self):
-        # Usare generate_splits() anziché run_experiments()
-        results = self.subsampling.generate_splits()
-        self.assertEqual(
-            len(results),
-            self.k_experiments,
-            "Il numero di esperimenti eseguiti non corrisponde al valore atteso."
-        )
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

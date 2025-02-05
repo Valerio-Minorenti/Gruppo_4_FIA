@@ -80,8 +80,17 @@ class RandomSubsampling(ValidationStrategy):
             # Convertiamo a intero se il classificatore restituisce float
             predictions = [int(pred) for pred in predictions]
 
+            # Calcola le probabilità previste sul test set
+            predicted_proba = classifier.predict_proba(x_test)
+
+            # Converti le probabilità della classe positiva in un array continuo
+            positive_class = 4  # La classe positiva cioè MALIGNIO sia '4'
+            predicted_proba_continuous = [proba.get(positive_class, 0.0) for proba in predicted_proba]
+            predicted_proba_continuous = [float(predprob) for predprob in predicted_proba_continuous]
+            # Salvataggio dei risultati di questo fold
+
             # Aggiungiamo la tupla (etichette reali, etichette predette)
-            results.append((y_test.tolist(), predictions))
+            results.append((y_test.tolist(), predictions, predicted_proba_continuous))
 
         return results
 

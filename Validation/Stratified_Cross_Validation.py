@@ -30,7 +30,7 @@ class StratifiedCrossValidation(ValidationStrategy):
         Poi richiama la logica di run_experiments, che esegue la cross validation.
 
         :param k: Numero di fold da utilizzare in questa esecuzione (opzionale).
-        :return: Lista di (y_test, predictions) per ogni fold.
+        :return: Lista di (y_test, predicted_proba) per ogni fold.
         """
         if k is not None:
             self.K = k
@@ -52,7 +52,6 @@ class StratifiedCrossValidation(ValidationStrategy):
 
             # Determina quanti campioni assegnare a ciascun fold
             fold_sizes = [len(class_indices) // self.K for _ in range(self.K)]
-            # Se la divisione non è perfetta, assegna 1 campione extra ai primi fold
             for i in range(len(class_indices) % self.K):
                 fold_sizes[i] += 1
 
@@ -76,14 +75,15 @@ class StratifiedCrossValidation(ValidationStrategy):
         Esegue la stratified cross-validation vera e propria:
           1) suddivide i dati tramite split(),
           2) allena il classificatore KNN su train_set,
-          3) predice su test_set per ogni fold.
+          3) calcola le probabilità previste su test_set per ogni fold.
 
-        :return: Lista di tuple (y_test, predictions) per ogni fold.
+        :return: Lista di tuple (y_test, predicted_proba) per ogni fold.
         """
         results = []
         folds = self.split(self.df, self.class_column)
 
         for train_set, test_set in folds:
+            # Prepara i dati di addestramento e test
             X_train = train_set.drop(columns=self.class_column).values
             y_train = train_set[self.class_column].values
             X_test = test_set.drop(columns=self.class_column).values
@@ -93,16 +93,24 @@ class StratifiedCrossValidation(ValidationStrategy):
             classifier = KNN(k=self.k_neighbors)
             classifier.fit(X_train, y_train)
 
-            # Previsione sul test set
+
             predictions = classifier.predict(X_test)
             predictions = [int(pred) for pred in predictions]
-            y_test = [int(ytest) for ytest in y_test]
+
+            # Calcola le probabilità previste sul test set
+            predicted_proba = classifier.predict_proba(X_test)
+
+            # Converti le probabilità della classe positiva in un array continuo
+            positive_class = 4  # La classe positiva cioè MALIGNIO sia '4'
+            predicted_proba_continuous = [proba.get(positive_class, 0.0) for proba in predicted_proba]
+            predicted_proba_continuous = [float(predprob) for predprob in predicted_proba_continuous]
             # Salvataggio dei risultati di questo fold
-            results.append((y_test, predictions))
+            y_test = [int(val) for val in y_test]
+            results.append((y_test, predictions, predicted_proba_continuous))
 
         return results
 
-# Test di esempio (se vuoi provarlo al volo)
+# Test di esempio
 if __name__ == '__main__':
     data = {
         'feature1': [1, 2, 3, 4, 5, 6, 7, 8, 8],
@@ -115,14 +123,15 @@ if __name__ == '__main__':
     print(df_example)
 
     K = int(input("\nInserisci il numero di fold K (ad es. 3): "))
-    k_neighbors = 3
+    k_neighbors = 7
 
     # Istanzia la classe e richiama generate_splits()
     splitter = StratifiedCrossValidation(K=K, df=df_example, class_column="Class", k_neighbors=k_neighbors)
     results = splitter.generate_splits()
 
-    # Stampa delle etichette reali e predette per ogni fold
-    for experiment_index, (y_test, predictions) in enumerate(results, start=1):
+    # Stampa delle etichette reali e delle probabilità previste per ogni fold
+    for experiment_index, (y_test,pred, predicted_proba) in enumerate(results, start=1):
         print(f"\nFold {experiment_index}:")
         print("Etichette reali (y_test):", [int(val) for val in y_test])
-        print("Predizioni (predictions):", [int(val) for val in predictions])
+        print("Etichette reali (y_test):", [int(val) for val in pred])
+        print("Probabilità previste (predicted_proba):", predicted_proba)

@@ -166,7 +166,7 @@ def main():
             try:
                 results = holdout.generate_splits(k)  # Passiamo k (numero di vicini)
                 if results:
-                    y_true, y_pred = results[0]  # Singolo split
+                    y_true, y_pred, predicted_prob = results[0]  # Singolo split
                     print("Holdout eseguito con successo.")
                     print(f"Numero di campioni nel test set: {len(y_true)}")
                     print(f"Esempio di etichette reali: {y_true[:30]}")
@@ -224,9 +224,10 @@ def main():
                     raise ValueError("Nessun risultato è stato generato. Verifica i dati di input e i parametri.")
 
                 # Stampa dei risultati degli esperimenti
-                for experiment_index, (y_test, predictions) in enumerate(results):
+                for experiment_index, (y_test, predictions, predicted_proba_continuous) in enumerate(results):
                     print(f"\nEsperimento {experiment_index + 1}:")
                     print("Etichette reali (y_test):", y_test[:10], "...")
+                    print("predicted_proba:", predicted_proba_continuous, "...")
                     print("Predizioni (predictions):", predictions[:10], "...")
             except ValueError as ve:
                 print(f"Errore nei dati di input o nei parametri: {ve}")
@@ -262,7 +263,7 @@ def main():
                 if not results:
                     raise ValueError("Nessun risultato generato. Controlla i dati di input/parametri.")
 
-                for experiment_index, (y_test, predictions) in enumerate(results):
+                for experiment_index, (y_test, predictions, predicted_proba) in enumerate(results):
                     print(f"\nEsperimento {experiment_index + 1}:")
                     count_4_test = list(y_test).count(4)
                     count_2_test = list(y_test).count(2)
@@ -296,30 +297,33 @@ def main():
     # Inizializza un dizionario per raccogliere i valori delle metriche per K esperimenti
     metrics_by_experiment = {metric: [] for metric in metrics_to_calculate}
 
+
     try:
-        # Ciclo su tutti gli esperimenti eseguiti (results è una lista di tuple (y_test, y_pred))
-        for experiment_index, (y_test, predictions) in enumerate(results):
+        for experiment_index, (y_test, predictions, predicted_proba) in enumerate(results):
             print(f"\nEsperimento {experiment_index + 1} - Calcolo metriche:")
+            print("y_test:", y_test)
+            print("y_pred:", predictions)
+
 
             # Calcolo delle metriche
             tp, tn, fp, fn = MetricsCalculator.confu(y_test, predictions)
             metrics_calc = MetricsCalculator(true_positive=tp, true_negative=tn, false_positive=fp, false_negative=fn)
             cm = metrics_calc.confusion_matrix()
+
             print("\nMatrice di confusione:")
             print(cm)
 
-            # Calcola le metriche richieste
-            metrics = metrics_calc.calculate_metrics(cm, metrics_to_calculate)
+            # Calcolo delle metriche, inclusa l'AUC
+            metrics = metrics_calc.calculate_metrics(confusion_matrix=cm, metrics_to_calculate = metrics_to_calculate, y_test=y_test, predictions=predictions, predicted_proba=predicted_proba)
 
-            # Aggiungi ogni metrica all'array corrispondente (per grafici cumulativi)
+            # Aggiungi i risultati per ogni metrica
             for metric, value in metrics.items():
-                if metric in metrics_by_experiment:
-                    metrics_by_experiment[metric].append(value)
+                metrics_by_experiment[metric].append(value)
 
-            # Stampa delle metriche per questo esperimento
+            # Stampa delle metriche calcolate
             print("\nMetriche calcolate (singolo esperimento):")
             for metric, value in metrics.items():
-                print(f"{metric}: {value:.4f}")
+                print(f"{metric}: {value:.4f}" if not np.isnan(value) else f"{metric}: N/A")
 
     except ValueError as ve:
         print(f"Errore nei dati di input o nei parametri: {ve}")
@@ -360,23 +364,18 @@ def main():
     plot_cm = input(
         "\nVuoi plottare e salvare la Confusion Matrix per ognuno dei K esperimenti? (s/n): ").strip().lower()
     if plot_cm == 's':
-        for i, (y_test, predictions) in enumerate(results):
+        for i, (y_test, predictions, predicted_proba) in enumerate(results):
             print(f"Plot Confusion Matrix - Esperimento {i + 1}")
             visual_metrics.plot_confusion_matrix(y_test, predictions)
+
+    new_results = [(y_test, predicted_proba) for y_test, _, predicted_proba in results]
 
     # 6) (Facoltativo) Plot ROC per ciascun esperimento
     plot_roc = input("\nVuoi plottare e salvare la ROC Curve per ognuno dei K esperimenti? (s/n): ").strip().lower()
     if plot_roc == 's':
-        # KNN di solito non fornisce punteggi continui, quindi usiamo un esempio di "fake" punteggio
-        for i, (y_test, predictions) in enumerate(results):
-            y_score_fake = []
-            for pred in predictions:
-                if pred == 4:
-                    y_score_fake.append(0.9)
-                else:
-                    y_score_fake.append(0.1)
+        for i, (y_test, predicted_proba) in enumerate(new_results):
             print(f"Plot ROC Curve - Esperimento {i + 1}")
-            visual_metrics.plot_roc_curve(y_test, y_score_fake)
+            visual_metrics.plot_roc_curve(y_test, predicted_proba)
 
     print("\nFine esecuzione. Risultati salvati in:", excel_path)
 

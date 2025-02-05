@@ -1,71 +1,52 @@
 import unittest
 import numpy as np
 import pandas as pd
-from Validation.Stratified_Cross_Validation import StratifiedCrossValidation  # Assicurati che il file si chiami Stratified_Cross_Validation.py
-
+from kNN_classifier import KNN
+from Validation.Stratified_Cross_Validation import StratifiedCrossValidation
 
 class TestStratifiedCrossValidation(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        """
-        Imposta un dataset di test prima di eseguire i test.
-        """
-        np.random.seed(42)  # Per riproducibilità dei risultati
-
-        # Creiamo un dataset di esempio con 12 campioni e 3 feature
-        cls.df = pd.DataFrame({
-            "feature1": np.random.randint(1, 10, 12),
-            "feature2": np.random.rand(12) * 10,
-            "Class": np.random.choice([2, 4], size=12, p=[0.5, 0.5])  # Due classi con distribuzione 50%
-        })
-
-        # Parametri per la Stratified Cross-Validation
-        cls.K = 3
-        cls.k_neighbors = 3
-
     def setUp(self):
-        """
-        Eseguito prima di ogni test per creare un'istanza di StratifiedCrossValidation.
-        """
-        self.cross_validator = StratifiedCrossValidation(
-            K=self.K,
-            df=self.df,
-            class_column="Class",
-            k_neighbors=self.k_neighbors
-        )
+        # Creazione di un dataset fittizio
+        data = {
+            'feature1': np.random.rand(20),
+            'feature2': np.random.rand(20),
+            'class': [2] * 10 + [4] * 10  # Due classi bilanciate
+        }
+        self.df = pd.DataFrame(data)
+        self.K = 5  # Numero di fold
+        self.k_neighbors = 3  # Numero di vicini per KNN
+        self.validator = StratifiedCrossValidation(self.K, self.df, 'class', self.k_neighbors)
 
-    def test_number_of_folds(self):
-        """
-        Testa se il dataset è suddiviso in K fold corretti.
-        """
-        folds = self.cross_validator.split(self.df.copy(), "Class")
-        self.assertEqual(len(folds), self.K, "Il numero di fold non corrisponde al valore atteso.")
+    def test_split_folds_count(self):
+        """Testa se la divisione in fold avviene correttamente."""
+        folds = self.validator.split(self.df, 'class')
+        self.assertEqual(len(folds), self.K, "Il numero di fold generati non è corretto.")
 
-    def test_predictions_length(self):
-        """
-        Testa se il numero di predizioni corrisponde al numero di etichette reali nel test set.
-        """
-        results = self.cross_validator.run_experiments()
+    def test_class_proportions_preserved(self):
+        """Verifica che le proporzioni delle classi siano preservate nei fold."""
+        folds = self.validator.split(self.df, 'class')
+        for train_set, test_set in folds:
+            train_class_counts = train_set['class'].value_counts(normalize=True)
+            test_class_counts = test_set['class'].value_counts(normalize=True)
+            self.assertAlmostEqual(train_class_counts[2], 0.5, delta=0.1,
+                                   msg="La proporzione della classe 2 nel training set non è mantenuta.")
+            self.assertAlmostEqual(train_class_counts[4], 0.5, delta=0.1,
+                                   msg="La proporzione della classe 4 nel training set non è mantenuta.")
+            self.assertAlmostEqual(test_class_counts[2], 0.5, delta=0.2,
+                                   msg="La proporzione della classe 2 nel test set non è mantenuta.")
+            self.assertAlmostEqual(test_class_counts[4], 0.5, delta=0.2,
+                                   msg="La proporzione della classe 4 nel test set non è mantenuta.")
 
-        for y_test, y_pred in results:
-            self.assertEqual(len(y_test), len(y_pred), "Il numero di predizioni non corrisponde al numero di etichette reali.")
+    def test_run_experiments_output(self):
+        """Testa se il metodo run_experiments restituisce l'output atteso."""
+        results = self.validator.run_experiments()
+        self.assertEqual(len(results), self.K, "Il numero di risultati non corrisponde ai fold previsti.")
+        for y_test, predictions, predicted_proba in results:
+            self.assertEqual(len(y_test), len(predictions), "Le dimensioni di y_test e predictions non coincidono.")
+            self.assertEqual(len(y_test), len(predicted_proba),
+                             "Le dimensioni di y_test e predicted_proba non coincidono.")
 
-    def test_stratification(self):
-        """
-        Testa se le classi nei test set rispettano la distribuzione originale.
-        """
-        folds = self.cross_validator.split(self.df.copy(), "Class")
-        original_distribution = self.df["Class"].value_counts(normalize=True)
 
-        for _, test_set in folds:
-            test_distribution = test_set["Class"].value_counts(normalize=True)
-            for class_label in original_distribution.index:
-                self.assertAlmostEqual(
-                    original_distribution[class_label], test_distribution.get(class_label, 0),
-                    delta=0.2,
-                    msg=f"La distribuzione della classe {class_label} nel test set non è coerente con l'originale."
-                )
-
-if __name__ == "__main__":
-    unittest.main()
+if __name__ == '__main__':
+        unittest.main()

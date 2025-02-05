@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from kNN_classifier import KNN  # Importa la classe KNN personalizzata
+from kNN_classifier import KNN
 from Validation.Validation_Strategy import ValidationStrategy  # Importa la classe astratta
 
 class Holdouts(ValidationStrategy):
@@ -56,9 +56,21 @@ class Holdouts(ValidationStrategy):
         y_train = labels.iloc[train_indices].to_numpy()
         y_test  = labels.iloc[test_indices].to_numpy()
 
+
         # Inizializza il kNN con k vicini
         knn_model = KNN(k)
         knn_model.fit(x_train, y_train)
+
+
+
+        # Calcola le probabilità previste sul test set
+        predicted_proba = knn_model.predict_proba(x_test)
+
+        # Converti le probabilità della classe positiva in un array continuo
+        positive_class = 4
+        predicted_proba_continuous = [proba.get(positive_class, 0.0) for proba in predicted_proba]
+        predicted_proba_continuous = [float(predprob) for predprob in predicted_proba_continuous]
+        # Salvataggio dei risultati di questo fold
 
         # Predice sul test set
         predictions = knn_model.predict(x_test)
@@ -66,7 +78,7 @@ class Holdouts(ValidationStrategy):
         y_test = [int(ytest) for ytest in y_test]
 
         # Restituisce una lista con una singola tupla (etichette reali, etichette previste)
-        results = [(y_test, predictions)]
+        results = [(y_test, predictions,predicted_proba_continuous)]
         return results
 
 """

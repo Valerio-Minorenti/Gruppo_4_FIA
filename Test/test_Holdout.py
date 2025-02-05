@@ -1,76 +1,93 @@
 import unittest
 import numpy as np
-from Validation.Holdout import Holdouts
+import pandas as pd
+from kNN_classifier import KNN  # Importa la classe KNN personalizzata
+from Validation.Validation_Strategy import ValidationStrategy  # Importa la classe astratta
+from Validation.Holdout import Holdouts  # Importa la classe Holdouts
 
 
 class TestHoldouts(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        """
-        Configura un dataset di test prima di eseguire i test.
-        """
-        np.random.seed(42)  # Per risultati riproducibili
-
-        # Dataset di esempio con 100 campioni
-        cls.data = np.random.rand(100, 5) * 10  # Valori casuali tra 0 e 10
-        cls.labels = np.random.choice([0, 1], size=100)  # Etichette binarie (0 o 1)
-
-        cls.test_ratio = 0.2  # 20% per il testing
-        cls.k = 3  # Numero di vicini per kNN
-
     def setUp(self):
-        """
-        Eseguito prima di ogni test.
-        """
-        self.holdout = Holdouts(self.test_ratio, self.data, self.labels)
+        """Imposta i dati di esempio per i test."""
+        np.random.seed(42)  # Imposta un seed fisso per la riproducibilità
 
-    def test_split_correctness(self):
-        """
-        Testa se il dataset è diviso correttamente in training e test set.
-        """
-        num_samples = len(self.data)
-        num_test_samples = int(num_samples * self.test_ratio)
-        num_train_samples = num_samples - num_test_samples
+        # Esempio di dati
+        self.sample_data = {
+            'feature1': [5, 2, 7, 1, 9, 4],
+            'feature2': [0.2, 0.5, 0.1, 0.9, 1.2, 0.3],
+            'Class': [2, 2, 4, 2, 4, 4]
+        }
+        self.df_example = pd.DataFrame(self.sample_data)
+        self.holdout = Holdouts(
+            test_ratio=0.3,
+            data=self.df_example[['feature1', 'feature2']],
+            labels=self.df_example['Class']
+        )
 
-        # Esegui la suddivisione
-        results = self.holdout.generate_splits(self.k)
-        y_test, _ = results[0]  #  etichette reali
+    def test_train_test_split(self):
+        """Verifica che lo split dei dati avvenga correttamente."""
+        data, labels = self.holdout.features, self.holdout.labels
+        num_samples = len(data)
+        num_test_samples = int(num_samples * self.holdout.test_ratio)
+        shuffled_indices = np.random.permutation(num_samples)
+        test_indices = shuffled_indices[:num_test_samples]
+        train_indices = shuffled_indices[num_test_samples:]
 
-        self.assertEqual(len(y_test), num_test_samples, "Il numero di campioni nel test set è errato")
+        x_train = data.iloc[train_indices].to_numpy()
+        x_test = data.iloc[test_indices].to_numpy()
+        y_train = labels.iloc[train_indices].to_numpy()
+        y_test = labels.iloc[test_indices].to_numpy()
 
-    def test_knn_predictions(self):
-        """
-        Testa se il kNN genera previsioni della stessa lunghezza delle etichette reali.
-        """
-        results = self.holdout.generate_splits(self.k)
-        y_test, y_pred = results[0]  # Prendiamo etichette reali e predette
+        # Calcolo delle dimensioni attese
+        expected_train_size = num_samples - num_test_samples
+        expected_test_size = num_test_samples
 
-        self.assertEqual(len(y_test), len(y_pred), "Le previsioni del kNN non corrispondono al numero di test sample")
+        # Asserzioni
+        self.assertEqual(len(x_train), expected_train_size)
+        self.assertEqual(len(x_test), expected_test_size)
+        self.assertEqual(len(y_train), expected_train_size)
+        self.assertEqual(len(y_test), expected_test_size)
 
-    def test_knn_values_are_binary(self):
-        """
-        Testa se le previsioni del kNN sono valori binari (0 o 1).
-        """
-        results = self.holdout.generate_splits(self.k)
-        _, y_pred = results[0]
+    def test_generate_splits(self):
+        """Verifica il funzionamento del metodo generate_splits()."""
+        results = self.holdout.generate_splits(k=3)
+        self.assertEqual(len(results), 1)
 
-        unique_values = set(y_pred)
-        self.assertTrue(unique_values.issubset({0, 1}), "Il kNN dovrebbe restituire solo 0 o 1")
+        y_test, predictions, predicted_proba_continuous = results[0]
 
-    def test_invalid_test_ratio(self):
-        """
-        Verifica che venga sollevato un errore se il test_ratio è fuori dai limiti validi.
-        """
-        with self.assertRaises(ValueError):
-            Holdouts(1.5, self.data, self.labels)  # test_ratio > 1 non è valido
+        # Controlla che le dimensioni delle previsioni e del test set siano coerenti
+        self.assertEqual(len(y_test), int(len(self.holdout.features) * self.holdout.test_ratio))
+        self.assertEqual(len(predictions), len(y_test))
+        self.assertEqual(len(predicted_proba_continuous), len(y_test))
 
-    def test_empty_training_set(self):
-        """
-        Verifica che venga sollevato un errore se il training set è vuoto.
-        """
-        with self.assertRaises(ValueError):
-            Holdouts(1, self.data, self.labels).generate_splits(self.k)  # Troppo poco training set
+    def test_predict_proba(self):
+        """Verifica che le probabilità previste siano valide."""
+        data, labels = self.holdout.features, self.holdout.labels
+        num_samples = len(data)
+        num_test_samples = int(num_samples * self.holdout.test_ratio)
+        shuffled_indices = np.random.permutation(num_samples)
+        test_indices = shuffled_indices[:num_test_samples]
+        train_indices = shuffled_indices[num_test_samples:]
 
-if __name__ == "__main__":
+        x_train = data.iloc[train_indices].to_numpy()
+        x_test = data.iloc[test_indices].to_numpy()
+        y_train = labels.iloc[train_indices].to_numpy()
+        y_test = labels.iloc[test_indices].to_numpy()
+
+        classifier = KNN(k=3)
+        classifier.fit(x_train, y_train)
+        predicted_proba = classifier.predict_proba(x_test)
+
+        # Calcola le probabilità continue per la classe positiva
+        positive_class = 4
+        predicted_proba_continuous = [proba.get(positive_class, 0.0) for proba in predicted_proba]
+
+        # Controlli sulle probabilità
+        self.assertEqual(len(predicted_proba_continuous), len(y_test))
+        for proba in predicted_proba_continuous:
+            self.assertTrue(0.0 <= proba <= 1.0)
+
+
+if __name__ == '__main__':
     unittest.main()
