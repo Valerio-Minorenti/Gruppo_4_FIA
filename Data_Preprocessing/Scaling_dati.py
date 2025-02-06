@@ -21,7 +21,7 @@ class Scalingdf:
         df_scalato = df.copy()
 
         # si prendono tutte le colonne tramnne sample id number
-        colonne_da_scalare = [col for col in df.columns if col != "Sample id number"]
+        colonne_da_scalare = [col for col in df.columns if col  not in ["Sample id number","classtype_v1"]]
 
         # formula standardizzazione
         for col in colonne_da_scalare:
@@ -49,7 +49,7 @@ class Scalingdf:
         df_scalato = df.copy()
 
         # si prendono tutte le colonne tramnne sample id number
-        colonne_da_scalare = [col for col in df.columns if col != "Sample id number" or col != "classtype_v1"]
+        colonne_da_scalare = [col for col in df.columns if col not in ["Sample id number","classtype_v1"]]
 
         # formula per normalizzare le colonne
         for col in colonne_da_scalare:
@@ -63,20 +63,19 @@ class Scalingdf:
         print("tutte le colonne sono state normalizzate con successo!")
         return df_scalato
 class GestisciScaling:
-
     """
-    gestione dello scaling da parte dell'utente
+    Gestione dello scaling e salvataggio dei dati.
     """
 
     @staticmethod
     def scale_features(strategia: str, data: pd.DataFrame) -> pd.DataFrame:
         """
-        viene chiesta quale tecnica usare
+        Scala il dataset in base alla strategia scelta.
 
         Args:
-            strategia (str): strategia che si vuole usare normalizzazione o standardizzazione
+            strategia (str): 'normalizza' o 'standardizza'
             data (pd.DataFrame): dataset da scalare
-       
+
         Returns:
             pd.DataFrame: dataset scalato
         """
@@ -86,3 +85,27 @@ class GestisciScaling:
             return Scalingdf.standardizza(data)
         else:
             raise ValueError("Purtroppo non è presente la strategia richiesta, usane una valida")
+
+    @staticmethod
+    def gestisci_scaling_e_salva(df: pd.DataFrame, output_path: str) -> None:
+        """
+        Metodo interattivo che chiede all'utente quale tipo di scaling applicare,
+        lo esegue sul dataset e salva il risultato.
+
+        Args:
+            df (pd.DataFrame): dataset da scalare
+            output_path (str): percorso dove salvare il dataset trasformato
+        """
+        print("Scegli lo scaling delle features: normalizza o standardizza ")
+        strategia = input("Per favore scrivi una sola tecnica: ").strip().lower()
+
+        if strategia not in ['normalizza', 'standardizza']:
+            print("Questa tecnica non è disponibile, verrà applicata la normalizzazione di default.")
+            strategia = 'normalizza'
+
+        print(f"{strategia.capitalize()}zione in corso...")
+        df_scaled = GestisciScaling.scale_features(strategia, df)
+
+        # Salva il dataset scalato
+        df_scaled.to_csv(output_path, index=True)
+        print(f"Dataset scalato salvato come '{output_path}'")

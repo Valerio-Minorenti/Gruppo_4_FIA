@@ -216,5 +216,5 @@ class MetricsCalculator:
         TPR = np.cumsum(y_true_sorted == positive_label) / total_positives
         FPR = np.cumsum(y_true_sorted != positive_label) / total_negatives
 
-        auc = np.trapz(TPR, FPR)
+        auc =np.trapz(TPR, FPR)
         return float(auc)

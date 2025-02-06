@@ -9,7 +9,6 @@ from Data_Preprocessing.Scaling_dati import GestisciScaling
 from Performance_Evaluation.Metrics import MetricsCalculator
 from Performance_Evaluation.Visual_Metrics import MetricsSaver
 
-
 def main():
     try:
         # Input e output path che vanno messi dall'utente
@@ -62,53 +61,25 @@ def main():
         print(f"Si è verificato un errore: {e}")
         return # Esci se fallisce la parte di manipolazione dati
 
-    # ------------------------------------------------------------------------------------
     #  SEZIONE: CARICAMENTO E SCALING DEL DATASET
-    # ------------------------------------------------------------------------------------
-    try:
-        # Carica il dataset salvato e usa Sample code number come indice
-        df = pd.read_csv(output_path, index_col="Sample code number")
-
+        # Carica il dataset originale con la colonna 'Sample code number' come indice
+    df = pd.read_csv(output_path, index_col="Sample code number")
         # Separa le etichette (classtype_v1) dalle feature
-        labels = df["classtype_v1"]  # Salva la colonna delle etichette
-        features = df.drop(columns=["classtype_v1"])  # Mantieni solo le feature per lo scaling
-
-        # Step 3: Scelta dell'utente per il Feature Scaling
-        print("Scegli lo scaling delle features: normalizza o standardizza ")
-        strategia = input("Per favore scrivi una sola tecnica: ").strip().lower()
-
-        if strategia not in ['normalizza', 'standardizza']:
-            print("Questa tecnica non è disponibile, verrà applicata la normalizzazione di default.")
-            strategia = 'normalizza'
-        print(f"{strategia}zione in corso...")
-
-        try:
-            features_scaled = GestisciScaling.scale_features(strategia=strategia, data=features)
-        except Exception as e:
-            print(f"C'è stato un errore durante lo scaling ({e}). Usiamo i dati originali.")
-            features_scaled = features  # Se fallisce, usa i dati originali
-
-        # Dopo lo scaling, riaggiungi classtype_v1
-        df_final = features_scaled.copy()
-        df_final["classtype_v1"] = labels
-
-        print("Dati dopo lo scaling delle feature (prime 5 righe):")
-        print(df_final.head())
-
+    labels = df["classtype_v1"]
+    features = df.drop(columns=["classtype_v1"])
+        # Gestisce scaling e salvataggio solo sulle features (senza la colonna 'classtype_v1')
+    GestisciScaling.gestisci_scaling_e_salva(features, "Dati_Progetto_Gruppo4_scalato.csv")
+        # Ricarica il file salvato con le features scalate
+    df_scalato = pd.read_csv("Dati_Progetto_Gruppo4_scalato.csv", index_col="Sample code number")
+        # Aggiungi di nuovo la colonna 'classtype_v1' al dataframe scalato
+    df_scalato["classtype_v1"] = labels
+        # Salva di nuovo il dataframe con la colonna aggiunta
+    df_scalato.to_csv("Dati_Progetto_Gruppo4_scalato_con_classtype.csv", index=False)
         # CONVERSIONE A NUMPY
-        features = features_scaled.to_numpy()
-        labels = labels.to_numpy()
+    features = features.to_numpy()
+    labels = labels.to_numpy()
 
-    except Exception as e:
-        print(f"Si è verificato un errore durante la fase di scaling o caricamento: {e}")
-        return
-
-        # Salva il dataset normalizzato/standardizzato (se necessario)
-    df_final.to_csv("Dati_Progetto_Gruppo4_scalato.csv", index=True)
-    print("Dataset normalizzato/standardizzato salvato come 'Dati_Progetto_Gruppo4_scalato.csv'")
-    # ------------------------------------------------------------------------------------
     # SEZIONE: Scelta metodo di split / validazione
-    # ------------------------------------------------------------------------------------
     dataset_path = input(
         "Inserisci il percorso del (scalato) da utilizzare (premere invio per usare il file scalato): ").strip()
     if not dataset_path:
@@ -144,9 +115,7 @@ def main():
 
     while True:
         method_choice = input("Inserisci il numero del metodo di split (1, 2 o 3): ").strip()
-
         if method_choice == "1":
-
             try:
                 test_ratio = float(input("Inserisci la percentuale dei dati per il testing (es: 0.3 = 30%): ").strip())
                 # inizializza Holdout
@@ -154,10 +123,9 @@ def main():
                 results = holdout.generate_splits(k)  # Passiamo k (numero di vicini)
             except Exception as e:
                 print(f"Si è verificato un errore durante l'esecuzione dell'Holdout: {e}")
-
             break
-
         elif method_choice == "2":
+            df=df_scalato
             try:
                 n_folds = int(input("Inserisci il numero di esperimenti (K): "))
                 random_subsampling = RandomSubsampling(
@@ -169,14 +137,13 @@ def main():
                     classifier_params={'k': k},  # Parametri del classificatore KNN
                     test_size=0.2  # Percentuale di dati per il test set
                 )
-
                 # Genera gli split
                 results=random_subsampling.generate_splits()
             except ValueError:
                 print("Inserisci un numero intero valido per gli esperimenti e il valore di K > 1.")
             break
-
         elif method_choice == "3":
+            df = df_scalato
             try:
                 n_folds = int(input("Inserisci il numero di esperimenti (K): "))
                 # Inizializzazione della classe StratifiedCrossValidation
@@ -186,20 +153,13 @@ def main():
                     class_column="classtype_v1",
                     k_neighbors=k
                 )
-
                 results=Strati.generate_splits()
-
             except ValueError:
                 print("Inserisci un numero intero valido per gli esperimenti e il valore di K > 1.")
-
             break
-
         else:
             print("Scelta non valida. Inserisci '1' (Holdout), '2' (Random), o '3' (Stratified).")
-
-    # ------------------------------------------------------------------------------------
     # SEZIONE: Calcolo e stampa METRICHE
-    # ------------------------------------------------------------------------------------
     metrics_calculator = MetricsCalculator()
 
     # Chiedi le metriche da calcolare
@@ -208,9 +168,7 @@ def main():
     # Calcola e stampa le metriche, ottenendo il dizionario con i risultati
     metrics_by_experiment = metrics_calculator.calcola_e_stampa_metriche(results, metrics_to_calculate)
 
-    # ------------------------------------------------------------------------------------
     # SEZIONE: Salvataggio dei risultati (Excel) + Plot confusion matrix e ROC se necessario
-    # ------------------------------------------------------------------------------------
     # 1) Chiedi all'utente dove salvare il file Excel
     excel_path = input(
         "\nInserisci il percorso completo per il file Excel dove salvare (es. C:/risultati/risultati_metriche.xlsx): ").strip()
@@ -246,5 +204,4 @@ def main():
     print("\nFine esecuzione. Risultati salvati in:", excel_path)
 
 if __name__ == "__main__":
-
     main()
