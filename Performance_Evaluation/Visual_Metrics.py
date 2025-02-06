@@ -162,39 +162,51 @@ class MetricsSaver:
         plt.legend(loc='lower right')
 
         # Mostra il grafico
+        temp_file = 'temp_roc_curve.png'
+        plt.savefig(temp_file)
+        self.save_plot_to_excel(temp_file, 'ROC Curve')
+
         plt.show()
 
+    def salva_risultati_excel(results, metrics_by_experiment):
+        """
+        Salva i risultati delle metriche in un file Excel e genera i plot della confusion matrix e della ROC curve.
 
-# ---------------------------------------------------------------
-# Esempio di utilizzo
-# ---------------------------------------------------------------
-if __name__ == "__main__":
-    filename = input("Inserisci il NOME (senza path) del file Excel (default: 'risultati_metriche.xlsx'): ").strip()
-    if not filename:
-        filename = "risultati_metriche.xlsx"
-    elif not filename.lower().endswith(".xlsx"):
-        filename += ".xlsx"
+        :param results: Lista di tuple (y_test, predictions, predicted_proba).
+        :param metrics_by_experiment: Dizionario delle metriche calcolate per ciascun esperimento.
+        """
+        # 1) Chiedi all'utente dove salvare il file Excel
+        excel_path = input(
+            "\nInserisci il percorso completo per il file Excel dove salvare (es. C:/risultati/risultati_metriche.xlsx): ").strip()
+        if not excel_path.lower().endswith(".xlsx"):
+            excel_path += ".xlsx"
 
-    metrics_saver = MetricsSaver(filename=filename)
+        # 2) Crea un'istanza di MetricsSaver con il percorso scelto
+        visual_metrics = MetricsSaver(filename=excel_path)
 
-    metrics_by_experiment = {
-        "Accuracy Rate": [0.8, 0.85, 0.9],
-        "Error Rate": [0.2, 0.15, 0.1],
-        "Sensitivity": [0.75, 0.8, 0.85],
-        "Specificity": [0.85, 0.9, 0.95],
-        "Geometric Mean": [0.8, 0.85, 0.9],
-        "Area Under the Curve": [0.9, 0.92, 0.95]
-    }
+        # 3) Salva su Excel tutte le metriche (le liste di K esperimenti per ogni metrica)
+        visual_metrics.save_metrics(metrics_by_experiment, sheet_name='Risultati Metriche')
 
-    metrics_saver.save_metrics(metrics_by_experiment)
-    metrics_saver.metrics_plot(metrics_by_experiment)
+        # 4) Mostra e salva i plot (boxplot e line plot) delle metriche su Excel
+        visual_metrics.metrics_plot(metrics_by_experiment)
 
-    y_true = [2, 4, 4, 2, 4, 2, 4, 4, 2, 2]
-    y_pred = [2, 4, 2, 4, 4, 4, 4, 4, 4, 4]
-    y_score = [0.1, 0.9, 0.1, 0.2, 0.9, 0.3, 0.7, 0.1, 0.1, 0.1]
+        # 5) (Facoltativo) Plot Confusion Matrix per ciascun esperimento
+        plot_cm = input(
+            "\nVuoi plottare e salvare la Confusion Matrix per ognuno dei K esperimenti? (s/n): ").strip().lower()
+        if plot_cm == 's':
+            for i, (y_test, predictions, predicted_proba) in enumerate(results):
+                print(f"Plot Confusion Matrix - Esperimento {i + 1}")
+                visual_metrics.plot_confusion_matrix(y_test, predictions)
 
-    metrics_saver.plot_confusion_matrix(y_true, y_pred)
-    metrics_saver.plot_roc_curve(y_true, y_score)
+        # Prepara i risultati per il plot ROC
+        new_results = [(y_test, predicted_proba) for y_test, _, predicted_proba in results]
 
-    final_path = os.path.join(os.getcwd(), filename)
-    print(f"\nTutto salvato in: {final_path}")
+        # 6) (Facoltativo) Plot ROC per ciascun esperimento
+        plot_roc = input("\nVuoi plottare e salvare la ROC Curve per ognuno dei K esperimenti? (s/n): ").strip().lower()
+        if plot_roc == 's':
+            for i, (y_test, predicted_proba) in enumerate(new_results):
+                print(f"Plot ROC Curve - Esperimento {i + 1}")
+                visual_metrics.plot_roc_curve(y_test, predicted_proba)
+
+        print("\nFine esecuzione. Risultati salvati in:", excel_path)
+
