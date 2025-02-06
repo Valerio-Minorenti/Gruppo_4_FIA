@@ -60,7 +60,7 @@ def main():
 
     except Exception as e:
         print(f"Si è verificato un errore: {e}")
-        return  # Esci se fallisce la parte di manipolazione dati
+        return # Esci se fallisce la parte di manipolazione dati
 
     # ------------------------------------------------------------------------------------
     #  SEZIONE: CARICAMENTO E SCALING DEL DATASET
@@ -103,10 +103,9 @@ def main():
         print(f"Si è verificato un errore durante la fase di scaling o caricamento: {e}")
         return
 
-    # Salva il dataset normalizzato/standardizzato (se necessario)
+        # Salva il dataset normalizzato/standardizzato (se necessario)
     df_final.to_csv("Dati_Progetto_Gruppo4_scalato.csv", index=True)
     print("Dataset normalizzato/standardizzato salvato come 'Dati_Progetto_Gruppo4_scalato.csv'")
-
     # ------------------------------------------------------------------------------------
     # SEZIONE: Scelta metodo di split / validazione
     # ------------------------------------------------------------------------------------
@@ -147,63 +146,20 @@ def main():
         method_choice = input("Inserisci il numero del metodo di split (1, 2 o 3): ").strip()
 
         if method_choice == "1":
-            # HOLDOUT
-            while True:
-                try:
-                    test_ratio = float(
-                        input("Inserisci la percentuale dei dati per il testing (es: 0.3 = 30%): ").strip())
-                    if 0 < test_ratio < 1:
-                        break
-                    else:
-                        print("Il valore deve essere tra 0 e 1 (es: 0.3).")
-                except ValueError:
-                    print("Errore: devi inserire un numero decimale (es: 0.3 per 30%).")
 
-            # inizializza Holdout
-            holdout = Holdouts(test_ratio=test_ratio, data=features, labels=labels)
-
-            # Esegui la validazione
             try:
+                test_ratio = float(input("Inserisci la percentuale dei dati per il testing (es: 0.3 = 30%): ").strip())
+                # inizializza Holdout
+                holdout = Holdouts(test_ratio=test_ratio, data=features, labels=labels)
                 results = holdout.generate_splits(k)  # Passiamo k (numero di vicini)
-                if results:
-                    y_true, y_pred, predicted_prob = results[0]  # Singolo split
-                    print("Holdout eseguito con successo.")
-                    print(f"Numero di campioni nel test set: {len(y_true)}")
-                    print(f"Esempio di etichette reali: {y_true[:30]}")
-                    print(f"Esempio di etichette predette: {[int(pred) for pred in y_pred[:30]]}")
-
-                    # Conteggio dei 4 nelle etichette reali e predette
-                    count_4_real = y_true.count(4)
-                    count_4_pred = [int(pred) for pred in y_pred].count(4)
-                    count_2_real = y_true.count(2)
-                    count_2_pred = [int(pred) for pred in y_pred].count(2)
-
-                    # Stampa dei conteggi
-                    print(f"Numero di '4' nelle etichette reali: {count_4_real}")
-                    print(f"Numero di '4' nelle etichette predette: {count_4_pred}")
-                    print(f"Numero di '2' nelle etichette reali: {count_2_real}")
-                    print(f"Numero di '2' nelle etichette predette: {count_2_pred}")
-
             except Exception as e:
                 print(f"Si è verificato un errore durante l'esecuzione dell'Holdout: {e}")
 
             break
 
         elif method_choice == "2":
-            # RANDOM SUBSAMPLING
-            while True:
-                n_folds_str = input("Inserisci il numero di esperimenti K (ad esempio, 5): ")
-                try:
-                    n_folds = int(n_folds_str)
-                    if n_folds > 1:
-                        break
-                    else:
-                        raise ValueError
-                except ValueError:
-                    print("Il numero di esperimenti K deve essere un numero intero > 1.")
-
-            # Inizializzazione di Random Subsampling
             try:
+                n_folds = int(input("Inserisci il numero di esperimenti (K): "))
                 random_subsampling = RandomSubsampling(
                     df=df,
                     x=df.iloc[:, :-1],  # Tutte le colonne tranne l'ultima come feature
@@ -213,75 +169,28 @@ def main():
                     classifier_params={'k': k},  # Parametri del classificatore KNN
                     test_size=0.2  # Percentuale di dati per il test set
                 )
-            except Exception as e:
-                print(f"Errore durante l'inizializzazione del Random Subsampling: {e}")
-                return
 
-            # Esegui gli esperimenti
-            try:
-                results = random_subsampling.generate_splits()
-                if not results:
-                    raise ValueError("Nessun risultato è stato generato. Verifica i dati di input e i parametri.")
-
-                # Stampa dei risultati degli esperimenti
-                for experiment_index, (y_test, predictions, predicted_proba_continuous) in enumerate(results):
-                    print(f"\nEsperimento {experiment_index + 1}:")
-                    print("Etichette reali (y_test):", y_test[:10], "...")
-                    print("predicted_proba:", predicted_proba_continuous, "...")
-                    print("Predizioni (predictions):", predictions[:10], "...")
-            except ValueError as ve:
-                print(f"Errore nei dati di input o nei parametri: {ve}")
-            except Exception as e:
-                print(f"Si è verificato un errore durante l'esecuzione del Random Subsampling: {e}")
-
+                # Genera gli split
+                results=random_subsampling.generate_splits()
+            except ValueError:
+                print("Inserisci un numero intero valido per gli esperimenti e il valore di K > 1.")
             break
 
         elif method_choice == "3":
-            # STRATIFIED CROSS VALIDATION
-            while True:
-                n_folds_str = input("Inserisci il numero di esperimenti K (ad esempio, 5): ")
-                try:
-                    n_folds = int(n_folds_str)
-                    if n_folds > 1:
-                        break
-                    else:
-                        raise ValueError
-                except ValueError:
-                    print("Il numero di esperimenti K deve essere un numero intero > 1.")
-
-            # Inizializzazione della classe StratifiedCrossValidation
-            Start = StratifiedCrossValidation(
-                K=n_folds,
-                df=df,
-                class_column="classtype_v1",
-                k_neighbors=k
-            )
-
-            # Eseguiamo gli esperimenti stratificati
             try:
-                results = Start.generate_splits()
-                if not results:
-                    raise ValueError("Nessun risultato generato. Controlla i dati di input/parametri.")
+                n_folds = int(input("Inserisci il numero di esperimenti (K): "))
+                # Inizializzazione della classe StratifiedCrossValidation
+                Strati = StratifiedCrossValidation(
+                    K=n_folds,
+                    df=df,
+                    class_column="classtype_v1",
+                    k_neighbors=k
+                )
 
-                for experiment_index, (y_test, predictions, predicted_proba) in enumerate(results):
-                    print(f"\nEsperimento {experiment_index + 1}:")
-                    count_4_test = list(y_test).count(4)
-                    count_2_test = list(y_test).count(2)
+                results=Strati.generate_splits()
 
-                    print(f"Numero di '4' nel test set: {count_4_test}")
-                    print(f"Numero di '2' nel test set: {count_2_test}")
-
-                    if (count_4_test + count_2_test) > 0:
-                        print(f"Percentuale di 4: {count_4_test / (count_4_test + count_2_test):.2%}")
-                        print(f"Percentuale di 2: {count_2_test / (count_4_test + count_2_test):.2%}")
-
-                    print("\nEsempio prime 10 etichette reali (y_test):", list(y_test)[:10])
-                    print("Esempio prime 10 predizioni (predictions):", list(predictions)[:10])
-
-            except ValueError as ve:
-                print(f"Errore nei dati di input o parametri: {ve}")
-            except Exception as e:
-                print(f"Si è verificato un errore durante la Stratified Cross Validation: {e}")
+            except ValueError:
+                print("Inserisci un numero intero valido per gli esperimenti e il valore di K > 1.")
 
             break
 
@@ -291,56 +200,13 @@ def main():
     # ------------------------------------------------------------------------------------
     # SEZIONE: Calcolo e stampa METRICHE
     # ------------------------------------------------------------------------------------
-    # Chiedi all'utente quali metriche calcolare
-    metrics_to_calculate = MetricsCalculator.scegli_metriche()
+    metrics_calculator = MetricsCalculator()
 
-    # Inizializza un dizionario per raccogliere i valori delle metriche per K esperimenti
-    metrics_by_experiment = {metric: [] for metric in metrics_to_calculate}
+    # Chiedi le metriche da calcolare
+    metrics_to_calculate = metrics_calculator.scegli_metriche()
 
-
-    try:
-        for experiment_index, (y_test, predictions, predicted_proba) in enumerate(results):
-            print(f"\nEsperimento {experiment_index + 1} - Calcolo metriche:")
-            print("y_test:", y_test)
-            print("y_pred:", predictions)
-
-
-            # Calcolo delle metriche
-            tp, tn, fp, fn = MetricsCalculator.confu(y_test, predictions)
-            metrics_calc = MetricsCalculator(true_positive=tp, true_negative=tn, false_positive=fp, false_negative=fn)
-            cm = metrics_calc.confusion_matrix()
-
-            print("\nMatrice di confusione:")
-            print(cm)
-
-            # Calcolo delle metriche, inclusa l'AUC
-            metrics = metrics_calc.calculate_metrics(confusion_matrix=cm, metrics_to_calculate = metrics_to_calculate, y_test=y_test, predictions=predictions, predicted_proba=predicted_proba)
-
-            # Aggiungi i risultati per ogni metrica
-            for metric, value in metrics.items():
-                metrics_by_experiment[metric].append(value)
-
-            # Stampa delle metriche calcolate
-            print("\nMetriche calcolate (singolo esperimento):")
-            for metric, value in metrics.items():
-                print(f"{metric}: {value:.4f}" if not np.isnan(value) else f"{metric}: N/A")
-
-    except ValueError as ve:
-        print(f"Errore nei dati di input o nei parametri: {ve}")
-    except Exception as e:
-        print(f"Si è verificato un errore durante il calcolo delle metriche: {e}")
-        return
-
-    # Calcolo della media delle metriche su K esperimenti
-    avg_metrics = {metric: np.mean(values) for metric, values in metrics_by_experiment.items()}
-    print("\nMedia delle metriche su tutti gli esperimenti:")
-    for metric, value in avg_metrics.items():
-        print(f"{metric}: {value:.4f}")
-
-    # Stampa dei risultati delle metriche (lista per ogni esperimento)
-    print("\nValori delle metriche per tutti gli esperimenti:")
-    for metric, values in metrics_by_experiment.items():
-        print(f"{metric}: {values}")
+    # Calcola e stampa le metriche, ottenendo il dizionario con i risultati
+    metrics_by_experiment = metrics_calculator.calcola_e_stampa_metriche(results, metrics_to_calculate)
 
     # ------------------------------------------------------------------------------------
     # SEZIONE: Salvataggio dei risultati (Excel) + Plot confusion matrix e ROC se necessario
@@ -368,6 +234,7 @@ def main():
             print(f"Plot Confusion Matrix - Esperimento {i + 1}")
             visual_metrics.plot_confusion_matrix(y_test, predictions)
 
+    # Prepara i risultati per il plot ROC
     new_results = [(y_test, predicted_proba) for y_test, _, predicted_proba in results]
 
     # 6) (Facoltativo) Plot ROC per ciascun esperimento
@@ -376,9 +243,8 @@ def main():
         for i, (y_test, predicted_proba) in enumerate(new_results):
             print(f"Plot ROC Curve - Esperimento {i + 1}")
             visual_metrics.plot_roc_curve(y_test, predicted_proba)
-
     print("\nFine esecuzione. Risultati salvati in:", excel_path)
 
-
 if __name__ == "__main__":
+
     main()

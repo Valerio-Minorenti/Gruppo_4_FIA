@@ -45,11 +45,11 @@ class MetricsCalculator:
         }, index=['Actual Negative', 'Actual Positive'])
 
     def calculate_metrics(self,
-                      confusion_matrix: pd.DataFrame,
-                      metrics_to_calculate: List[str],
-                      y_test: np.ndarray = None,
-                      predictions: np.ndarray = None,
-                      predicted_proba: np.ndarray = None) -> Dict[str, float]:
+                          confusion_matrix: pd.DataFrame,
+                          metrics_to_calculate: List[str],
+                          y_test: np.ndarray = None,
+                          predictions: np.ndarray = None,
+                          predicted_proba: np.ndarray = None) -> Dict[str, float]:
         """
         Calcola le metriche specificate da una matrice di confusione.
         """
@@ -70,10 +70,9 @@ class MetricsCalculator:
         if "Geometric Mean" in metrics_to_calculate:
             metrics["Geometric Mean"] = self._geometric_mean(tp, tn, fp, fn)
         if "Area Under Curve" in metrics_to_calculate:
-            if y_test is not None and predictions is not None:
-                # Calcolo dell'AUC usando i punteggi e y_test
+            if y_test is not None and predicted_proba is not None:
                 try:
-                    metrics["Area Under Curve"] = self._area_under_curve_knn(y_test, predictions)
+                    metrics["Area Under Curve"] = self._area_under_curve_knn(y_test, predicted_proba)
                 except Exception as e:
                     print(f"Errore durante il calcolo dell'AUC: {e}")
                     metrics["Area Under Curve"] = float('nan')
@@ -83,67 +82,67 @@ class MetricsCalculator:
 
         return metrics
 
-    def _accuracy_rate(self, tp: int, tn: int, fp: int, fn: int) -> float:
-        total = tp + tn + fp + fn
-        return float((tp + tn) / total if total > 0 else 0.0)
-
-    def _error_rate(self, tp: int, tn: int, fp: int, fn: int) -> float:
-        total = tp + tn + fp + fn
-        return float((fp + fn) / total if total > 0 else 0.0)
-
-    def _sensitivity(self, tp: int, fn: int) -> float:
-        actual_positive = tp + fn
-        return float(tp / actual_positive if actual_positive > 0 else 0.0)
-
-    def _specificity(self, tn: int, fp: int) -> float:
-        actual_negative = tn + fp
-        return float(tn / actual_negative if actual_negative > 0 else 0.0)
-
-    def _geometric_mean(self, tp: int, tn: int, fp: int, fn: int) -> float:
-        sensitivity = self._sensitivity(tp, fn)
-        specificity = self._specificity(tn, fp)
-        return float(np.sqrt(sensitivity * specificity))
-
-    def _area_under_curve_knn(self, y_test: np.ndarray, predicted_proba: np.ndarray) -> float:
+    def calcola_e_stampa_metriche(self, results: List[Tuple[np.ndarray, np.ndarray, np.ndarray]],
+                                  metrics_to_calculate: List[str]) -> Dict[str, List[float]]:
         """
-        Calcola l'Area Under Curve (AUC) usando i valori di probabilità predetti.
+        Calcola e stampa le metriche per tutti gli esperimenti e restituisce i risultati.
 
-        :param y_test: Array dei valori reali.
-        :param predicted_proba: Array dei valori di probabilità predetti per la classe positiva.
-        :return: Valore dell'AUC.
+        :param results: Lista di tuple contenenti (y_test, predictions, predicted_proba).
+        :param metrics_to_calculate: Lista delle metriche da calcolare.
+        :return: Dizionario con i valori delle metriche per ogni esperimento.
         """
-        # Converto esplicitamente gli input in array NumPy, se necessario
-        y_test = np.asarray(y_test)
-        predicted_proba = np.asarray(predicted_proba)
+        metrics_by_experiment = {metric: [] for metric in metrics_to_calculate}
 
-        # Classe positiva (puoi cambiare il valore se necessario)
-        positive_label = 2
+        try:
+            for experiment_index, (y_test, predictions, predicted_proba) in enumerate(results):
+                print(f"\nEsperimento {experiment_index + 1} - Calcolo metriche:")
+                print("y_test:", y_test)
+                print("y_pred:", predictions)
 
-        # Controlla se ci sono almeno due classi nei valori reali
-        if len(np.unique(y_test)) < 2:
-            print("Errore: Actual values contiene solo una classe, AUC non può essere calcolata!")
-            return 0.0
+                # Calcolo delle metriche
+                tp, tn, fp, fn = self.confu(y_test, predictions)
+                metrics_calc = MetricsCalculator(true_positive=tp, true_negative=tn, false_positive=fp,
+                                                 false_negative=fn)
+                cm = metrics_calc.confusion_matrix()
 
-        # Ordina i valori delle probabilità predette e i corrispondenti valori reali
-        sorted_indices = np.argsort(predicted_proba)
-        y_true_sorted = y_test[sorted_indices]
+                print("\nMatrice di confusione:")
+                print(cm)
 
-        # Calcola TPR e FPR
-        total_positives = np.sum(y_true_sorted == positive_label)
-        total_negatives = np.sum(y_true_sorted != positive_label)
+                # Calcolo delle metriche, inclusa l'AUC
+                metrics = metrics_calc.calculate_metrics(
+                    confusion_matrix=cm,
+                    metrics_to_calculate=metrics_to_calculate,
+                    y_test=y_test,
+                    predictions=predictions,
+                    predicted_proba=predicted_proba
+                )
 
-        if total_positives == 0 or total_negatives == 0:
-            print("Errore: non ci sono abbastanza esempi per calcolare la curva ROC.")
-            return 0.0
+                # Aggiungi i risultati per ogni metrica
+                for metric, value in metrics.items():
+                    metrics_by_experiment[metric].append(value)
 
-        # Calcolo dei True Positive Rate (TPR) e False Positive Rate (FPR)
-        TPR = np.cumsum(y_true_sorted == positive_label) / total_positives
-        FPR = np.cumsum(y_true_sorted != positive_label) / total_negatives
+                # Stampa delle metriche calcolate
+                print("\nMetriche calcolate (singolo esperimento):")
+                for metric, value in metrics.items():
+                    print(f"{metric}: {value:.4f}" if not np.isnan(value) else f"{metric}: N/A")
 
-        # Calcolo dell'AUC usando il metodo del trapezio
-        auc = np.trapz(TPR, FPR)
+        except ValueError as ve:
+            print(f"Errore nei dati di input o nei parametri: {ve}")
+        except Exception as e:
+            print(f"Si è verificato un errore durante il calcolo delle metriche: {e}")
 
-        return float(auc)
+        # Calcolo della media delle metriche su K esperimenti
+        avg_metrics = {metric: np.mean(values) for metric, values in metrics_by_experiment.items()}
+        print("\nMedia delle metriche su tutti gli esperimenti:")
+        for metric, value in avg_metrics.items():
+            print(f"{metric}: {value:.4f}")
+
+        # Stampa dei risultati delle metriche (lista per ogni esperimento)
+        print("\nValori delle metriche per tutti gli esperimenti:")
+        for metric, values in metrics_by_experiment.items():
+            print(f"{metric}: {values}")
+
+        return metrics_by_experiment
 
     @staticmethod
     def scegli_metriche() -> List[str]:
@@ -170,3 +169,52 @@ class MetricsCalculator:
         }
 
         return [metrics_map[choice.strip()] for choice in metrics_choice if choice.strip() in metrics_map]
+
+    def _accuracy_rate(self, tp: int, tn: int, fp: int, fn: int) -> float:
+        total = tp + tn + fp + fn
+        return float((tp + tn) / total if total > 0 else 0.0)
+
+    def _error_rate(self, tp: int, tn: int, fp: int, fn: int) -> float:
+        total = tp + tn + fp + fn
+        return float((fp + fn) / total if total > 0 else 0.0)
+
+    def _sensitivity(self, tp: int, fn: int) -> float:
+        actual_positive = tp + fn
+        return float(tp / actual_positive if actual_positive > 0 else 0.0)
+
+    def _specificity(self, tn: int, fp: int) -> float:
+        actual_negative = tn + fp
+        return float(tn / actual_negative if actual_negative > 0 else 0.0)
+
+    def _geometric_mean(self, tp: int, tn: int, fp: int, fn: int) -> float:
+        sensitivity = self._sensitivity(tp, fn)
+        specificity = self._specificity(tn, fp)
+        return float(np.sqrt(sensitivity * specificity))
+
+    def _area_under_curve_knn(self, y_test: np.ndarray, predicted_proba: np.ndarray) -> float:
+        """
+        Calcola l'Area Under Curve (AUC) usando i valori di probabilità predetti.
+        """
+        y_test = np.asarray(y_test)
+        predicted_proba = np.asarray(predicted_proba)
+        positive_label = 2
+
+        if len(np.unique(y_test)) < 2:
+            print("Errore: Actual values contiene solo una classe, AUC non può essere calcolata!")
+            return 0.0
+
+        sorted_indices = np.argsort(predicted_proba)
+        y_true_sorted = y_test[sorted_indices]
+
+        total_positives = np.sum(y_true_sorted == positive_label)
+        total_negatives = np.sum(y_true_sorted != positive_label)
+
+        if total_positives == 0 or total_negatives == 0:
+            print("Errore: non ci sono abbastanza esempi per calcolare la curva ROC.")
+            return 0.0
+
+        TPR = np.cumsum(y_true_sorted == positive_label) / total_positives
+        FPR = np.cumsum(y_true_sorted != positive_label) / total_negatives
+
+        auc = np.trapz(TPR, FPR)
+        return float(auc)
